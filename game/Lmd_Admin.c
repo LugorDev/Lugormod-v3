@@ -291,6 +291,11 @@ void Cmd_Teleport_f (gentity_t *ent, int iArg){
 		Disp(ent, "^3Target and destination players are the same.");
 		return;
 	}
+	if (tEnt->client->pers.Lmd.refuseTele)
+	{
+		Disp(ent, "^3Target player has refused teleportation at the moment.");
+		return;
+	}
 	if(iArg == 0){
 		tEnt = ent;
 		fEnt = &g_entities[i];
@@ -333,6 +338,60 @@ void Cmd_Teleport_f (gentity_t *ent, int iArg){
 	VectorSet(fEnt->client->ps.velocity, 0, 0, 0);
 }
 
+void Cmd_RefuseTele_f(gentity_t *ent, int iArg)
+{
+	ent->client->pers.Lmd.refuseTele = !ent->client->pers.Lmd.refuseTele;
+	Disp(ent, va("^3Teleportation requests are now %s.", ent->client->pers.Lmd.refuseTele ? "^5blocked" : "^5allowed"));
+}
+
+void Cmd_TeleMark_f(gentity_t *ent, int iArg)
+{
+	char arg[MAX_STRING_CHARS];
+	vec3_t loc;
+	vec_t vec;
+	const int argc = trap_Argc();
+	
+	if (argc == 2 || argc == 3)
+	{
+		Disp(ent, "^3Usage:\n  ^3Telemark ^2<x pos> <y pos> <z pos>\n  ^3TeleMark");
+		return;
+	}
+    
+	if (argc == 4)
+	{
+		for(int i = 0; i < 3; i++){
+			trap_Argv(i + 1, arg, sizeof(arg));
+			vec = atoi(arg);
+			if(vec == 0 && !(arg[0] == '0' && arg[1] == 0)){
+				Disp(ent, "^3Invalid argument, expected a number");
+				return;
+			}
+			loc[i] = vec;
+		}
+       
+		ent->client->pers.Lmd.teleMarkSet = qtrue;
+		VectorCopy(loc, ent->client->pers.Lmd.teleMarkPosition);
+		VectorCopy(ent->client->ps.viewangles, ent->client->pers.Lmd.teleMarkAngles);
+		Disp(ent, "^2Telemark set to Origin: (^3%d %d %d^2) Angles: (^3%d %d %d^2)", 
+			(int)loc[0], (int)loc[1], (int)loc[2], 
+			(int)ent->client->ps.viewangles[PITCH], 
+			(int)ent->client->ps.viewangles[YAW], 
+			(int)ent->client->ps.viewangles[ROLL]);
+		return;
+	}
+    
+	ent->client->pers.Lmd.teleMarkSet = qtrue;
+	VectorCopy(ent->client->ps.origin, ent->client->pers.Lmd.teleMarkPosition);
+	VectorCopy(ent->client->ps.viewangles, ent->client->pers.Lmd.teleMarkAngles);
+	Disp(ent, "^2Telemark set to Origin: (^3%d %d %d^2) Angles: (^3%d %d %d^2)",
+	   (int)ent->client->pers.Lmd.teleMarkPosition[0],
+	   (int)ent->client->pers.Lmd.teleMarkPosition[1],
+	   (int)ent->client->pers.Lmd.teleMarkPosition[2],
+	   (int)ent->client->pers.Lmd.teleMarkAngles[0],
+	   (int)ent->client->pers.Lmd.teleMarkAngles[1],
+	   (int)ent->client->pers.Lmd.teleMarkAngles[2]);
+}
+
 void Cmd_GotoPoint_f(gentity_t *ent, int iArg){
 	int argc = trap_Argc();
 	if(argc == 1){
@@ -362,6 +421,24 @@ void Cmd_GotoPoint_f(gentity_t *ent, int iArg){
 		char arg[MAX_STRING_CHARS];
 		int i;
 		if(argc < 4){
+			if (argc == 2)
+			{
+				trap_Argv(1, arg, sizeof(arg));
+   
+				if (!Q_stricmp(arg, "telemark"))
+				{
+					if (!ent->client->pers.Lmd.teleMarkSet)
+					{
+						Disp(ent, "Do /telemark first.");
+						return;
+					}
+					
+					TeleportPlayer(ent, ent->client->pers.Lmd.teleMarkPosition, ent->client->pers.Lmd.teleMarkAngles, qfalse);
+					return;       
+				}
+				return;
+			}
+				
 			Disp(ent, "^3Usage: Gotopoint ^2<x pos> <y pos> <z pos>");
 			return;
 		}
@@ -375,7 +452,7 @@ void Cmd_GotoPoint_f(gentity_t *ent, int iArg){
 			loc[i] = vec;
 		}
 		TeleportPlayer(ent, loc, ent->client->ps.viewangles, qfalse);
-		Disp(ent, "^2Teleported to cordinates.");
+		Disp(ent, "^2Teleported to coordinates.");
 	}
 }
 
@@ -1039,7 +1116,9 @@ cmdEntry_t adminCommandEntries[] = {
 	{"freeze", "Freeze a player in place.  If no player given, affect the targeted player.  Use again to unfreeze them.", Cmd_Freeze_f, 0, qtrue, 3, 0, 0},
 	{"gethere", "Teleport a player in front of you.", Cmd_Teleport_f, 0, qtrue, 3, 0,(1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
 	{"goto", "Teleport to infront of <player>.", Cmd_Teleport_f, 1, qtrue, 4, 0, (1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
-	{"gotopoint", "Teleports you to the given cordinates.  If no cordinates specified, it teleports you to the location you are aiming at.", Cmd_GotoPoint_f, 0, qtrue, 4, 0, (1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
+	{"gotopoint", "Teleports you to the given cordinates.  If no cordinates specified, it teleports you to the location you are aiming at. If 'telemark' is 2nd argument you are getting teleported to your /telemark", Cmd_GotoPoint_f, 0, qtrue, 4, 0, (1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
+	{"telemark", "Marks the given cordinates for /gotopoint telemark.  If no cordinates specified, it marks the position you're at.", Cmd_TeleMark_f, 0, qtrue, 4, 0, (1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
+	{"refusetele", "Refuse being teleported or teleported to.", Cmd_RefuseTele_f, 0, qtrue, 4, 0, (1 << GT_SIEGE)|(1 << GT_CTF)|(1 << GT_CTY)|(1 << GT_BATTLE_GROUND)|(1 << GT_SABER_RUN)},
 	{"hicredits","Display top ten wealthiest players.", HiScore, 2, qtrue, 1, 129, 0},
 	{"topcredits","Display top ten wealthiest players.", HiScore, 2, qtrue, 1, 129, 0},
 	{"hideadmin", "Toggles your visibility in the admin list.", Cmd_HideAdminStatus_f, 0, qtrue, 2, 0, 0},

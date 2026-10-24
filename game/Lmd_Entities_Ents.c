@@ -278,8 +278,6 @@ qboolean PlayerUseableCheck(gentity_t* self, gentity_t* activator)
     if ((self->Lmd.UseReq.profession < 0 && activatorProf != PROF_NONE) || (self->Lmd.UseReq.profession > 0 &&
         (activatorProf <= PROF_BOT || !(self->Lmd.UseReq.profession & (1 << (activatorProf - 3))))))
         return qfalse;
-
-    
    
     if (self->Lmd.UseReq.sideAcc > 0)
     {
@@ -290,7 +288,7 @@ qboolean PlayerUseableCheck(gentity_t* self, gentity_t* activator)
         if (self->Lmd.UseReq.sideAcc != sideAcc)
             return qfalse;
     }
-
+    
     if (self->Lmd.UseReq.level > 0 && (activatorLevel < self->Lmd.UseReq.level ||
         (self->Lmd.UseReq.levelMax >= self->Lmd.UseReq.level && activatorLevel > self->Lmd.UseReq.levelMax)))
         return qfalse;

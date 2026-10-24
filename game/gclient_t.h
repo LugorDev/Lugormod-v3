@@ -133,6 +133,11 @@ typedef struct {
 		}Actions;
 		int chatMode[2]; //[0] say, [1] team
 		int fakePing; // ping faking
+
+		qboolean teleMarkSet;
+		vec3_t teleMarkPosition;
+		vec3_t teleMarkAngles;
+		qboolean refuseTele;
 	}Lmd;
 } clientPersistant_t;
 
