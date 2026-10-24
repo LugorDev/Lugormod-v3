@@ -911,7 +911,7 @@ void Kebab_EnergyMissile(gentity_t* ent)
 	VectorMA(ent->r.currentOrigin, 32, forward, start);
 	start[2] += ent->client->ps.viewheight;
 	missile = CreateMissile(start, forward, 750, 30000, ent, qfalse);
-	missile->classname = "demp2_proj";
+	missile->classname = "sskill_energyball";
 	missile->s.weapon = WP_DEMP2;
 	missile->mass = 10;
 	VectorSet( missile->r.maxs, 5, 5, 5 );
@@ -1659,7 +1659,7 @@ qboolean SSkills_ForceAllowed(gentity_t *attacker, gentity_t *target, int power)
     return qtrue;
 }
 
-int SSkills_Damage(gentity_t *target, gentity_t *attacker, int damage, int flags, int mod)
+int SSkills_Damage(gentity_t *target, gentity_t *attacker, gentity_t *inflictor, int damage, int flags, int mod)
 {
     if (!lmd_specialSkills.integer || damage <= 0) return damage;
     if (PLAYERISVALID(target)) {
@@ -1675,7 +1675,7 @@ int SSkills_Damage(gentity_t *target, gentity_t *attacker, int damage, int flags
         }
         if (s->drugged > level.time) damage = min(INT_MAX / 2, damage) * 2;
         if (s->fuelpour > level.time && mod == MOD_LAVA) s->burn = level.time + 10000;
-        if (mod == MOD_DEMP2_ALT && PLAYERISVALID(attacker) &&
+        if (inflictor && inflictor->classname && !Q_stricmp(inflictor->classname, "sskill_energyball") && PLAYERISVALID(attacker) &&
             Kebab_HasSkill(attacker->client->pers.Lmd.account, SKILL_ENERGY, qtrue) && !Kebab_HasImmunity(target))
             G_Knockdown(target, 1000);
     }

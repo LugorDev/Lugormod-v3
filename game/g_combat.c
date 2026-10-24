@@ -5394,7 +5394,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		targ->client->ps.weaponTime += 500;
 	}
 
-	damage = SSkills_Damage(targ, attacker, damage, dflags, mod);
+	damage = SSkills_Damage(targ, attacker, inflictor, damage, dflags, mod);
 	if (damage <= 0) return;
 	take = damage;
 	save = 0;

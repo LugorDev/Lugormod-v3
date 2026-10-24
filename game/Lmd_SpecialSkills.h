@@ -56,7 +56,7 @@ void SSkills_Command(gentity_t *ent, int iArg);
 qboolean SSkills_Has(gentity_t *ent, int index);
 qboolean SSkills_Buy(gentity_t *ent, int index);
 void SSkills_Demolition(gentity_t *attacker, float *damage, float *radius, int mod);
-int SSkills_Damage(gentity_t *target, gentity_t *attacker, int damage, int flags, int mod);
+int SSkills_Damage(gentity_t *target, gentity_t *attacker, gentity_t *inflictor, int damage, int flags, int mod);
 qboolean SSkills_ForceAllowed(gentity_t *attacker, gentity_t *target, int power);
 int SSkills_Regen(gentity_t *ent, int amount);
 void lmd_skillshop(gentity_t *ent);
