@@ -1758,7 +1758,10 @@ void SSkills_Command(gentity_t *ent, int iArg)
     if (!PLAYERISVALID(ent) || !Kebab_EnableSkills()) return;
     Account_t *acc = ent->client->pers.Lmd.account;
     char name[MAX_STRING_CHARS];
-    trap_Argv(1, name, sizeof(name));
+    if (iArg > 0 && iArg <= NUM_SKILLS)
+        Q_strncpyz(name, starSkills[iArg - 1].cmdName, sizeof(name));
+    else
+        trap_Argv(1, name, sizeof(name));
     if (!name[0]) {
         Disp(ent, "^5Special skills: visit a skill shop to purchase. Use /sskills <name> to activate an owned skill.");
         for (int i = 0; i < NUM_SKILLS; i++) {
