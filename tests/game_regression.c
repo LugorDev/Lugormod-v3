@@ -5,6 +5,7 @@
 #include "../game/Lmd_Accounts_CustomSkills.h"
 #include "../game/Lmd_Accounts_Stats.h"
 #include "../game/Lmd_Checksum.h"
+#include "../game/Lmd_Commands_Auths.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -164,6 +165,7 @@ int main(void) {
     static gentity_t target, player;
     static gclient_t client;
     player.client = &client;
+    CHECK(!Auths_PlayerHasAuthFlag(&player, AUTH_NO_FLOODPROTECTION));
     char powers[] = "push3.pull2";
     target.target2 = powers;
     Use_Target_Fp(&target, NULL, &player);
