@@ -44,6 +44,27 @@ target6   - Corresponding target to fire.
 
 - This randomly genrates a number from 1-7 and fire the target if the number is the same. If it goes over 4, it doesn't fire anything. 4/7 of the time it will do nothing.
 
+## lmd_equalcheck * (L)
+Compares the value of a spawn key across up to six targetnames. When every referenced entity reports the same value (or matches an explicitly provided value) the entity fires `EqualTarget`; otherwise it fires `UnequalTarget`.
+
+### Keys:
+
+```
+target1-6      - targetnames whose entities should be checked.
+key            - spawn key to read from each entity. (required)
+value          - optional expected value. If omitted, the first entity found supplies the reference value.
+EqualTarget    - target to fire when all values match the reference.
+UnequalTarget  - target to fire when a mismatch is detected or a target entity/key is missing.
+```
+
+### Example code:
+
+```
+/place lmd_equalcheck * target1,pillar_a,target2,pillar_b,key,state,EqualTarget,both_active,UnequalTarget,needs_reset,
+```
+
+The example checks that entities named `pillar_a` and `pillar_b` share the same `state` key before triggering `both_active`; otherwise it fires `needs_reset`.
+
 ## lmd_restrict *(L)
 Restricts the person inside of it by whatever spawnflags are set. Use maxs/mins to set the bounding box.
 

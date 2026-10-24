@@ -446,6 +446,8 @@ void SP_target_location (gentity_t *ent);
 extern entityInfo_t target_location_info;
 void SP_target_counter (gentity_t *self);
 extern entityInfo_t target_counter_info;
+void SP_target_doorstate (gentity_t *self);
+extern entityInfo_t target_doorstate_info;
 void SP_target_random (gentity_t *self);
 extern entityInfo_t target_random_info;
 void SP_target_scriptrunner( gentity_t *self );
@@ -726,6 +728,9 @@ extern entityInfo_t lmd_terminal_info;
 void lmd_toggle(gentity_t *ent);
 extern entityInfo_t lmd_toggle_info;
 
+void lmd_timer(gentity_t *ent);
+extern entityInfo_t lmd_timer_info;
+
 void lmd_train (gentity_t *self);
 extern entityInfo_t lmd_train_info;
 
@@ -750,6 +755,9 @@ extern entityInfo_t target_modify_info;
 
 void lmd_cskill_compare(gentity_t* self);
 extern entityInfo_t lmd_cskill_compare_info;
+
+void lmd_equalcheck(gentity_t* self);
+extern entityInfo_t lmd_equalcheck_info;
 
 void lmd_countcheck(gentity_t* self);
 extern entityInfo_t lmd_countcheck_info;
@@ -852,6 +860,8 @@ spawn_t	spawnInitValues[] = {
 	{"lmd_toggle", lmd_toggle, Logical_True, &lmd_toggle_info},
 	{"t2_toggle", lmd_toggle, Logical_True},
 
+	{"lmd_timer", lmd_timer, Logical_True, &lmd_timer_info},
+
 	{"lmd_train", lmd_train, Logical_False, &lmd_train_info},
 	{"lmd_trainer", lmd_trainer, Logical_False, &lmd_trainer_info},
 
@@ -946,6 +956,7 @@ spawn_t	spawnInitValues[] = {
 	{"target_position", SP_target_position, Logical_True, &target_position_info},
 	{"target_location", SP_target_location, Logical_True, &target_location_info},
 	{"target_counter", SP_target_counter, Logical_True, &target_counter_info},
+	{"target_doorstate", SP_target_doorstate, Logical_True, &target_doorstate_info},
 	{"target_random", SP_target_random, Logical_True, &target_random_info},
 	{"target_scriptrunner", SP_target_scriptrunner, qfalse, &target_scriptrunner_info},
 	{"target_interest", SP_target_interest, Logical_True},
@@ -1143,6 +1154,9 @@ spawn_t	spawnInitValues[] = {
 	{"target_heal", sp_target_heal, Logical_True, &target_heal_info},
 	{"lmd_actor_modify", lmd_actor_modify, Logical_True, &lmd_actor_modify_info},
 	{"target_animate", sp_target_animate, Logical_True, &target_animate_info},
+
+	// lumaya:
+		{"lmd_equalcheck", lmd_equalcheck, Logical_True, &lmd_equalcheck_info},
 
 	{NULL, 0, Logical_False}
 };

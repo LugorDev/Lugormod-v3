@@ -203,6 +203,27 @@ target      - what to fire at when the delay time is hit
 
 - This would be for if i pressed a button and i wanna give the player enough time to get to the general area of where the x-wing spawned, so i gave it a three second delay, that way there is a smaller chance of someone stealing that players ship that they paid for.
 
+## target_doorstate **
+Checks a set of func_door or lmd_door entities to make sure they are resting in the position described by their `wantPosition` key. Fires its normal `target` when every door matches; otherwise it fires `target2`. Each monitored door must have `wantPosition` set to either `open` or `close` (synonym `closed`).
+
+### Keys:
+
+```
+target      - fired when all referenced doors match their wantPosition.
+target2     - fired when a door is missing or does not match its wantPosition.
+door1-6     - targetnames of the doors to monitor.
+```
+
+### Example code:
+
+```
+/spawnstring edit vault_door wantPosition close
+/place target_doorstate * target,vault_locked,target2,vault_open,door1,vault_door
+```
+
+The example ensures the door named `vault_door` is closed before firing `vault_locked`; otherwise it fires `vault_open`.
+
+
 ## target_speaker **
 This entity will play a sound that you specify in a certain radius.
 

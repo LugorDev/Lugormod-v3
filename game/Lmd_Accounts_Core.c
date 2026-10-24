@@ -519,7 +519,7 @@ void Accounts_SetName(Account_t *acc, char *name) {
 	Lmd_Accounts_Modify(acc);
 }
 
-int Accounts_GetPassword(Account_t *acc) {
+unsigned int Accounts_GetPassword(Account_t *acc) {
 	if(!acc)
 		return 0;
 	return acc->pwChksum;
@@ -706,17 +706,16 @@ int Accounts_LoadTitles(void) {
 			line = strtok(NULL, "\n");
 			continue;
 		}
-
-		char *rest = NULL;
-		char *type = strtok_s(line, ",", &rest);
+		
+		char *type = strtok(line, ",");
 		if (!type) {
 			line = strtok(NULL, "\n");
 			continue;
 		}
 
 		char *titles[6] = {0};
-		for (int i = 0; i < 6 && rest; i++) {
-			titles[i] = strtok_s(NULL, ",", &rest);
+		for (int i = 0; i < 6; i++) {
+			titles[i] = strtok(NULL, ",");
 		}
 
 		if (!titles[0] || !titles[4]) {

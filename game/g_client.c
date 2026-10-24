@@ -10,6 +10,7 @@
 #include "Lmd_EntityCore.h"
 #include "Lmd_IPs.h"
 #include "Lmd_Bans.h"
+#include "Lmd_HiRuns.h"
 #include "Lmd_Time.h"
 
 #include "Lmd_Entities_Public.h"
@@ -4725,6 +4726,7 @@ void ClientDisconnect( int clientNum ) {
 	updatePlayer(ent);
 	Confirm_Clear(ent);
 	Interact_Clear(ent);
+	HiRuns_ClientDisconnect(ent);
 
 	//Lugormod remove buddies and ignores
 	j = (int)floor((float)clientNum / 16);

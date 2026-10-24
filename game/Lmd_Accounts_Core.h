@@ -33,7 +33,7 @@ char* Accounts_GetName(Account_t *acc);
 void Accounts_SetName(Account_t *acc, char *name);
 #define PlayerAcc_SetName(ent, value) Accounts_SetName(ent->client->pers.Lmd.account, value)
 
-int Accounts_GetPassword(Account_t *acc);
+unsigned int Accounts_GetPassword(Account_t *acc);
 
 void Accounts_SetPassword(Account_t *acc, char *password);
 #define PlayerAcc_SetPassword(ent, password) Accounts_SetPassword(ent->client->pers.Lmd.account, password)

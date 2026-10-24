@@ -619,6 +619,7 @@ void Lmd_Accounts_Player_CreateSecurityCode(gentity_t *ent, Account_t *acc) {
 
 qboolean Lmd_Accounts_Player_TryLogin(gentity_t *ent, char *username, char *pass, char *secCode){
 	unsigned long int chk = Checksum(pass);
+	
 	int i;
 	Account_t *acc;
 	char *accSec;
