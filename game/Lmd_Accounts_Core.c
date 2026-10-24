@@ -564,7 +564,7 @@ Character_t *Characters_Get(unsigned int idx) {
 	int i;
 	for (i = 0; i < AccList.count; i++) {
 		Account_t *acc = AccList.accounts[i];
-		if ((int)idx < acc->numCharacters)
+		if (idx < (unsigned int)acc->numCharacters)
 			return acc->characters[idx];
 		idx -= acc->numCharacters;
 	}

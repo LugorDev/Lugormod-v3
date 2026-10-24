@@ -245,7 +245,7 @@ static void HiRuns_BuildDisplay(const LmdHiRun_t *run, char *out, int outSize) {
 }
 
 static void HiRuns_AbortRun(LmdHiRun_t *run, const char *reason) {
-	if (!run || run->participantCount <= 0) {
+	if (!run) {
 		return;
 	}
 

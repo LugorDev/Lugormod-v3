@@ -8,6 +8,7 @@
 #include "../game/Lmd_SpecialSkills.h"
 #include "../game/Lmd_Commands_Core.h"
 #include "../game/Lmd_Commands_Auths.h"
+#include "../game/Lmd_HiRuns.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -146,6 +147,8 @@ int main(void) {
     CHECK(parseAccount("legacy", legacy));
     Account_t *acc = Accounts_GetById(101);
     CHECK(acc != NULL);
+    CHECK(Characters_Get(~0U) == NULL);
+    CHECK(Characters_Get(Characters_Count()) == NULL);
     CHECK(Account_GetNumCharacters(acc) == 1);
     CHECK(Accounts_GetCredits(acc) == 12345);
     CHECK(Accounts_Prof_GetLevel(acc) == 27);
@@ -369,6 +372,15 @@ int main(void) {
     CHECK(client.Lmd.lmdMenu.entityNum == 0);
     CHECK(player.flags & FL_GODMODE);
     CHECK(Accounts_GetCredits(copy) == 1300);
+    g_entities[0].client = &client;
+    HiRuns_TimerStart(&g_entities[0], "disconnect-regression", 1);
+    CHECK(client.Lmd.hiRuns.running);
+    HiRuns_ClientDisconnect(&g_entities[0]);
+    CHECK(!client.Lmd.hiRuns.running);
+    HiRuns_TimerStart(&g_entities[0], "disconnect-regression", 1);
+    CHECK(client.Lmd.hiRuns.running);
+    HiRuns_ClientDisconnect(&g_entities[0]);
+    g_entities[0].client = NULL;
 
     printf("Passed %d checks.\n", checks);
     return 0;
