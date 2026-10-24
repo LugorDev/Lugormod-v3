@@ -5,6 +5,7 @@
 #include "Lmd_Accounts_Stats.h"
 #include "Lmd_Commands_Auths.h"
 #include "Lmd_Professions.h"
+int Professions_StartingLevel(void);
 #include "Lmd_Checksum.h"
 #include "Lmd_Time.h"
 #include "Lmd_IPs.h"
@@ -538,7 +539,7 @@ qboolean Lmd_Accounts_Player_SelectCharacter(gentity_t *ent, Character_t *ch) {
 
 	if (!Accounts_Prof_GetLevel(acc)) {
 		Accounts_Prof_SetProfession(acc, PROF_NONE);
-		Accounts_Prof_SetLevel(acc, 1);
+		Accounts_Prof_SetLevel(acc, Professions_StartingLevel());
 		Accounts_SetScore(acc, 10);
 		if (lmd_startingcr.integer > 0) {
 			Accounts_SetCredits(acc, lmd_startingcr.integer);
@@ -547,6 +548,9 @@ qboolean Lmd_Accounts_Player_SelectCharacter(gentity_t *ent, Character_t *ch) {
 	}
 
 	int prof = Accounts_Prof_GetProfession(acc);
+	if ((prof == PROF_NONE || prof == PROF_JEDI || prof == PROF_MERC) &&
+		Accounts_Prof_GetLevel(acc) < Professions_StartingLevel())
+		Accounts_Prof_SetLevel(acc, Professions_StartingLevel());
 	if (prof != PROF_BOT) {
 		ent->flags &= ~FL_GODMODE;
 		if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {

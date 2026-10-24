@@ -26,6 +26,11 @@ int AccProfessionDataDataIndex = -1;
 
 #define MAX_LEVEL  40
 
+int Professions_StartingLevel(void) {
+	extern vmCvar_t lmd_startingLevel;
+	return max(1, min(MAX_LEVEL, lmd_startingLevel.integer));
+}
+
 extern vmCvar_t lmd_accLevelDiscount_time;
 extern vmCvar_t lmd_accLevelDiscount_maxTime;
 
@@ -539,7 +544,7 @@ qboolean Professions_ChooseProf(gentity_t *ent, int prof){
 */
 	
 	PlayerAcc_Prof_SetProfession(ent, prof);
-	PlayerAcc_Prof_SetLevel(ent, 1);
+	PlayerAcc_Prof_SetLevel(ent, Professions_StartingLevel());
 
 	recallDroppedCredits(ent);
 
