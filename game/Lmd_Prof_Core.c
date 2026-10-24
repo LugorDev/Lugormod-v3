@@ -458,7 +458,7 @@ int Professions_UsedSkillPoints(Account_t *acc, int prof, profSkill_t *skill){
 
 	int i, sum = 0;
 
-	if (!acc) {
+	if (!acc || prof < 0 || prof >= NUM_PROFESSIONS || !Professions[prof]) {
 		return 0;
 	}
 

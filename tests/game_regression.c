@@ -9,10 +9,9 @@
 #include <windows.h>
 #include <dbghelp.h>
 static LONG WINAPI reportException(EXCEPTION_POINTERS *exception) {
-    char storage[sizeof(SYMBOL_INFO) + 256];
-    SYMBOL_INFO *symbol = (SYMBOL_INFO *)storage;
+    struct { SYMBOL_INFO info; char name[256]; } storage = {0};
+    SYMBOL_INFO *symbol = &storage.info;
     DWORD64 displacement;
-    memset(storage, 0, sizeof(storage));
     symbol->SizeOfStruct = sizeof(*symbol);
     symbol->MaxNameLen = 255;
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
