@@ -298,6 +298,22 @@ target2   - fire if they do not meet requirements
 /place lmd_playercheck * targetname,let_me_in,level,5,target,teleport_me_in,target2,deny_msg,
 ```
 
+## lmd_playereffect ** (L)
+When triggered, this entity will use its target when enabled, and use its target2 when disabled.
+
+### Keys:
+
+```
+effect      - 1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying., 10: Freeze
+wait        - Time to play the effect for.  Default 30.
+```
+
+### Example code:
+
+```
+/place lmd_playereffect * targetname,apply_effect,effect,2,wait,5
+```
+
 ## LMD_spawner **(L)(If no targetname)
 This entity was implemented by Lugor, it should be able to use any of the keys provided for npc_spawner and one more, it also allows the NPC to respawn after it has been destroyed.
 

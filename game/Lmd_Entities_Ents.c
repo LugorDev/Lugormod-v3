@@ -2716,7 +2716,7 @@ void lmd_scale(gentity_t* ent)
 const entityInfoData_t lmd_playereffect_keys[] = {
     {
         "effect",
-        "1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying."
+        "1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying., 10: Freeze"
     },
     {"wait", "Time to play the effect for.  Default 30."},
     {NULL, NULL}
@@ -2773,6 +2773,16 @@ void lmd_playereffect_use(gentity_t* ent, gentity_t* other, gentity_t* activator
         activator->flags |= FL_UNDYING;
         activator->client->Lmd.undyingTime = level.time + ent->wait;
         break;
+    case 10:
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                activator->client->ps.velocity[i] = 0;
+            }
+            activator->client->Lmd.flags |= SNF_FREEZE;
+            activator->client->Lmd.freezeTime = level.time + ent->wait;
+            break;
+        }
     }
 }
 

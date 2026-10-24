@@ -547,6 +547,7 @@ struct gclient_s {
 		int notargetTime;
 		int invisibleTime;
 		int undyingTime;
+		int freezeTime;
 		int backupJumpLevel; // lmd_restrict jump
 
 		vec3_t mark;

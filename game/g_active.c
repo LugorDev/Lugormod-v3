@@ -2288,6 +2288,11 @@ void ClientThink_real( gentity_t *ent ) {
 		client->Lmd.undyingTime = 0;
 	}
 
+	if (client->Lmd.freezeTime > 0 && client->Lmd.freezeTime < level.time){
+		ent->client->Lmd.flags &= ~SNF_FREEZE;
+		client->Lmd.freezeTime = 0;
+	}
+
 	//RoboPhred
 	if(client->pers.Lmd.jailTime > level.time && client->ps.saberHolstered != 2) {
 		client->ps.saberHolstered = 2;
