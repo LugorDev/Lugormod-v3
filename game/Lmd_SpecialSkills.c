@@ -185,6 +185,47 @@ int Kebab_CanEvade(gentity_t* target)
 	return base > 0 ? !Q_irand(0, base) : 1;
 }
 
+static qboolean SSkills_Evaded(gentity_t *caster, gentity_t *target)
+{
+    if (!Kebab_CanEvade(target)) return qfalse;
+    Disp(caster, "^3Target has managed to evade your skill!");
+    Kebab_EvadeAnimation(target);
+    return qtrue;
+}
+
+static qboolean SSkills_TargetImmune(gentity_t *caster, gentity_t *target)
+{
+    if (!Kebab_HasImmunity(target)) return qfalse;
+    Disp(caster, "^1Target is immune to this special skill.");
+    return qtrue;
+}
+
+static qboolean SSkills_Standing(gentity_t *ent)
+{
+    for (int axis = 0; axis < 3; axis++) {
+        if (fabs(ent->client->ps.velocity[axis]) > 50.0f) {
+            Disp(ent, "^1You have to stand still when using this skill.");
+            return qfalse;
+        }
+    }
+    return qtrue;
+}
+
+static void SSkills_Dash(gentity_t *ent)
+{
+    vec3_t angles = {0}, forward, right, up, direction;
+    angles[YAW] = ent->client->ps.viewangles[YAW];
+    AngleVectors(angles, forward, right, up);
+    if (ent->client->pers.cmd.forwardmove)
+        VectorScale(forward, ent->client->pers.cmd.forwardmove > 0 ? 1 : -1, direction);
+    else if (ent->client->pers.cmd.rightmove)
+        VectorScale(right, ent->client->pers.cmd.rightmove > 0 ? 1 : -1, direction);
+    else if (ent->client->ps.saberMove <= 3) VectorCopy(up, direction);
+    else VectorCopy(forward, direction);
+    G_Throw(ent, direction, 256);
+    ent->client->ps.velocity[2] += 192;
+}
+
 int Kebab_SkillDuration(gentity_t* ent, int* var, int duration)
 {
 	if (Kebab_HasSkill(ent->client->pers.Lmd.account, SKILL_HR, qtrue))
@@ -244,17 +285,8 @@ int Kebab_SlowRegen(gentity_t* ent)
 			trap_SendServerCommand( ent->s.number, "print \"^1This skill cannot be used on mercenaries.\n\"");
 			return 0;
 		}
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].regenSlowed, 10000);
@@ -388,17 +420,8 @@ int Kebab_DisableJP(gentity_t* ent)
 			trap_SendServerCommand( ent->s.number, "print \"^1This skill can only be used on players with a jetpack.\n\"");
 			return 0;
 		}
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		NPC_SetAnim(ent, SETANIM_BOTH, 1374, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		if (to->client->jetPackOn == qtrue)
 		{
@@ -423,11 +446,7 @@ int Kebab_DisableJP(gentity_t* ent)
 
 int Kebab_ForceSever(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
@@ -441,17 +460,8 @@ int Kebab_ForceSever(gentity_t* ent)
 			trap_SendServerCommand( ent->s.number, "print \"^1This skill cannot be used on mercenaries.\n\"");
 			return 0;
 		}
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		NPC_SetAnim(ent, SETANIM_BOTH, 1351, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].severed, 10000);
 		trap_SendServerCommand( ent->s.number, va("print \"^3The target has been severed from the force for %d seconds.\n\"", duration/1000));
@@ -508,35 +518,7 @@ int Kebab_CloakSkill(gentity_t* ent)
 
 int Kebab_ForceDash(gentity_t* ent)
 {
-	vec3_t  angles, dir;
-	VectorSet( angles, 0, ent->client->ps.viewangles[YAW], 0 );
-	if (ent->client->pers.cmd.rightmove > 0)
-	{
-		AngleVectors( angles, NULL, dir, NULL );
-	}
-	if (ent->client->pers.cmd.rightmove < 0)
-	{
-		AngleVectors( angles, NULL, dir, NULL );
-		VectorScale( dir, -1, dir );
-	}
-	if (ent->client->pers.cmd.forwardmove > 0)
-	{
-		AngleVectors( angles, dir, NULL, NULL );
-	}
-	if (ent->client->pers.cmd.forwardmove < 0)
-	{
-		AngleVectors( angles, dir, NULL, NULL );
-		VectorScale( dir, -1, dir );
-	}
-	if (ent->client->pers.cmd.forwardmove == 0 && ent->client->pers.cmd.rightmove == 0)
-	{
-		if (ent->client->ps.saberMove <= 3)
-			AngleVectors( angles, NULL, NULL, dir );
-		else
-			AngleVectors( angles, dir, NULL, NULL );
-	}
-	G_Throw(ent, dir, 256);
-	ent->client->ps.velocity[2] += 192;
+	SSkills_Dash(ent);
 	if (ent->client->ps.saberMove <= 3)
 		NPC_SetAnim(ent, SETANIM_BOTH, 1151, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 	trap_SendServerCommand( ent->s.number, "print \"^2You have dashed using the force.\n\"");
@@ -545,11 +527,7 @@ int Kebab_ForceDash(gentity_t* ent)
 
 int Kebab_ForceSlow(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
@@ -558,17 +536,8 @@ int Kebab_ForceSlow(gentity_t* ent)
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		WP_ForcePowerStop(to, FP_SPEED);
 		NPC_SetAnim(ent, SETANIM_BOTH, 1374, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		G_PlayEffectID(G_EffectIndex("repeater/concussion"), to->client->ps.origin, to->client->ps.viewangles);
@@ -601,11 +570,7 @@ int Kebab_MercSprint(gentity_t* ent)
 
 int Kebab_PoisonDart(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	trace_t tr;
 	SSkills_AimTrace(&tr, ent, 1024, NULL, NULL);
 	if (tr.fraction < 1.0 && tr.entityNum < MAX_CLIENTS)
@@ -613,17 +578,8 @@ int Kebab_PoisonDart(gentity_t* ent)
 		gentity_t* to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || p_playerInfo[tr.entityNum].poisoned > level.time)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].poisoned, 10000);
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		
@@ -842,11 +798,7 @@ void Kebab_ForceInsanityDo(gentity_t* target)
 
 int Kebab_ForceInsanity(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
@@ -855,11 +807,7 @@ int Kebab_ForceInsanity(gentity_t* ent)
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || to->client->sess.spectatorState)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].insanity, 10000);
 		trap_SendServerCommand( ent->s.number, va("print \"^3The target has been driven insane for %d seconds.\n\"", duration/1000));
@@ -992,11 +940,7 @@ void Kebab_FireWallDo(gentity_t* ent)
 
 int Kebab_FireWall(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	NPC_SetAnim(ent, SETANIM_BOTH, BOTH_VICTORY_FAST, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_RESTART | SETANIM_FLAG_HOLD);
 	p_playerInfo[ent->s.number].wallcharge = level.time + 2000;
 	// Use weapon and movement locks; do not take ownership of an admin freeze.
@@ -1020,17 +964,8 @@ int Kebab_PourFuel(gentity_t* ent)
 		gentity_t* to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
-		if (Kebab_CanEvade(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^3Target has managed to evade your skill!\n\"");
-			Kebab_EvadeAnimation(to);
-			return 1;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
+		if (SSkills_Evaded(ent, to)) return 1;
 		NPC_SetAnim(ent, SETANIM_TORSO, BOTH_FORCEPUSH, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].fuelpour, 30000);
 		p_playerInfo[tr.entityNum].fueledby = ent->s.number;
@@ -1061,11 +996,7 @@ int Kebab_Drug(gentity_t* ent)
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || to->client->sess.spectatorState)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
 		
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].drugged, 10000);
@@ -1090,35 +1021,7 @@ int Kebab_FuelJump(gentity_t* ent)
 		return 0;
 	}
 	ent->client->jetPackOn = qtrue;
-	vec3_t  angles, dir;
-	VectorSet( angles, 0, ent->client->ps.viewangles[YAW], 0 );
-	if (ent->client->pers.cmd.rightmove > 0)
-	{
-		AngleVectors( angles, NULL, dir, NULL );
-	}
-	if (ent->client->pers.cmd.rightmove < 0)
-	{
-		AngleVectors( angles, NULL, dir, NULL );
-		VectorScale( dir, -1, dir );
-	}
-	if (ent->client->pers.cmd.forwardmove > 0)
-	{
-		AngleVectors( angles, dir, NULL, NULL );
-	}
-	if (ent->client->pers.cmd.forwardmove < 0)
-	{
-		AngleVectors( angles, dir, NULL, NULL );
-		VectorScale( dir, -1, dir );
-	}
-	if (ent->client->pers.cmd.forwardmove == 0 && ent->client->pers.cmd.rightmove == 0)
-	{
-		if (ent->client->ps.saberMove <= 3)
-			AngleVectors( angles, NULL, NULL, dir );
-		else
-			AngleVectors( angles, dir, NULL, NULL );
-	}
-	G_Throw(ent, dir, 256);
-	ent->client->ps.velocity[2] += 192;
+	SSkills_Dash(ent);
 	NPC_SetAnim(ent, SETANIM_BOTH, 1151, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 	trap_SendServerCommand( ent->s.number, "print \"^2You have dashed.\n\"");
 	return 1;
@@ -1142,11 +1045,7 @@ int Kebab_ForceBreach(gentity_t* ent)
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || to->client->sess.spectatorState)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].breach, 5000);
 		vec3_t entDir;
@@ -1187,11 +1086,7 @@ int Kebab_ForceBreach(gentity_t* ent)
 
 int Kebab_Incinerate(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
@@ -1200,11 +1095,7 @@ int Kebab_Incinerate(gentity_t* ent)
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || to->client->sess.spectatorState)
 			return 0;
-		if (Kebab_HasImmunity(to))
-		{
-			trap_SendServerCommand( ent->s.number, "print \"^1Target is immune to this sskill.\n\"");
-			return 0;
-		}
+		if (SSkills_TargetImmune(ent, to)) return 0;
 		trap_SendServerCommand( tr.entityNum, "print \"^4Extinguish the fire in 2 seconds or die!\n\"");
 		NPC_SetAnim(ent, SETANIM_BOTH, 1335, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		p_playerInfo[tr.entityNum].incineratetime = level.time + 2000;
@@ -1249,11 +1140,7 @@ void Kebab_ForceCombustionDo(gentity_t* ent)
 
 int Kebab_ForceCombustion(gentity_t* ent)
 {
-	if (fabs(ent->client->ps.velocity[0]) > 50.0f || fabs(ent->client->ps.velocity[1]) > 50.0f || fabs(ent->client->ps.velocity[2]) > 50.0f)
-	{
-		trap_SendServerCommand( ent->s.number, "print \"^1You have to stand still when using this skill.\n\"");
-		return 0;
-	}
+	if (!SSkills_Standing(ent)) return 0;
 	p_playerInfo[ent->s.number].sparktime = level.time + 10*1000; 
 	for (int i = 0; i < NUM_FORCE_POWERS; i++)
 		WP_ForcePowerStop(ent, i);
