@@ -5,6 +5,35 @@
 #include "../game/Lmd_Accounts_CustomSkills.h"
 #include "../game/Lmd_Accounts_Stats.h"
 #include "../game/Lmd_Checksum.h"
+#ifdef _WIN32
+#include <windows.h>
+#include <dbghelp.h>
+static LONG WINAPI reportException(EXCEPTION_POINTERS *exception) {
+    char storage[sizeof(SYMBOL_INFO) + 256];
+    SYMBOL_INFO *symbol = (SYMBOL_INFO *)storage;
+    DWORD64 displacement;
+    memset(storage, 0, sizeof(storage));
+    symbol->SizeOfStruct = sizeof(*symbol);
+    symbol->MaxNameLen = 255;
+    SymInitialize(GetCurrentProcess(), NULL, TRUE);
+    if (SymFromAddr(GetCurrentProcess(), (DWORD64)exception->ExceptionRecord->ExceptionAddress, &displacement, symbol))
+        fprintf(stderr, "Exception in %s + %llu\n", symbol->Name, (unsigned long long)displacement);
+#ifdef _WIN64
+    STACKFRAME64 frame = {0};
+    CONTEXT context = *exception->ContextRecord;
+    frame.AddrPC.Offset = context.Rip;
+    frame.AddrFrame.Offset = context.Rbp;
+    frame.AddrStack.Offset = context.Rsp;
+    frame.AddrPC.Mode = frame.AddrFrame.Mode = frame.AddrStack.Mode = AddrModeFlat;
+    for (int i = 0; i < 12 && StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(),
+        &frame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL); i++) {
+        if (SymFromAddr(GetCurrentProcess(), frame.AddrPC.Offset, &displacement, symbol))
+            fprintf(stderr, "  %s + %llu\n", symbol->Name, (unsigned long long)displacement);
+    }
+#endif
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
 
 void dllEntry(int (QDECL *callback)(int, ...));
 void Accounts_Prof_Register(void);
@@ -68,6 +97,9 @@ static int QDECL mockEngine(int call, ...) {
 }
 
 int main(void) {
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(reportException);
+#endif
     dllEntry(mockEngine);
     level.time = 1000;
     lmd_accBaseDays.integer = 100000;
@@ -115,6 +147,17 @@ int main(void) {
     CHECK(Account_NewCharacter(copy, "Fourth") == NULL);
     CHECK(Accounts_SaveChecked(copy));
     CHECK(strstr(saved, "Second") && strstr(saved, "Third"));
+    strcpy(roundtrip, saved);
+    id = strstr(roundtrip, "102");
+    CHECK(id != NULL);
+    memcpy(id, "103", 3);
+    CHECK(parseAccount("multi", roundtrip));
+    Account_t *multi = Accounts_GetById(103);
+    CHECK(multi && Account_GetNumCharacters(multi) == 3);
+    Account_SetActiveCharacter(multi, Account_GetCharacter(multi, 1));
+    CHECK(Accounts_GetCredits(multi) == 77);
+    CHECK(!strcmp(Accounts_Custom_GetValue(multi, "test"), "second"));
+    CHECK(Accounts_SaveChecked(multi));
     failOpen = 1;
     CHECK(!Accounts_SaveChecked(copy));
     failOpen = 0;

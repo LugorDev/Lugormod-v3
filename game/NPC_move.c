@@ -75,7 +75,7 @@ NPC_CheckCombatMove
 -------------------------
 */
 
-ID_INLINE qboolean NPC_CheckCombatMove( void )
+static ID_INLINE qboolean NPC_CheckCombatMove( void )
 {
 	//return NPCInfo->combatMove;
 	if ( ( NPCInfo->goalEntity && NPC->enemy && NPCInfo->goalEntity == NPC->enemy ) || ( NPCInfo->combatMove ) )
@@ -123,7 +123,7 @@ NPC_GetMoveInformation
 -------------------------
 */
 
-ID_INLINE qboolean NPC_GetMoveInformation( vec3_t dir, float *distance )
+static ID_INLINE qboolean NPC_GetMoveInformation( vec3_t dir, float *distance )
 {
 	//NOTENOTE: Use path stacks!
 

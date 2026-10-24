@@ -6,7 +6,7 @@
 gentity_t **logicEnts = NULL;
 unsigned int logicCount = 0;
 
-inline int getFreeSlot(){
+static inline int getFreeSlot(){
 	int i;
 	for(i = 0; i < logicCount; i++){
 		if(logicEnts[i]->inuse == qfalse){

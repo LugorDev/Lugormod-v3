@@ -102,6 +102,8 @@ void Svcmd_DeleteNick_f (void){
 
 gentity_t *Accounts_GetPlayerByAcc(Account_t *acc);
 qboolean Accounts_Property_HasKeys(Account_t *acc);
+unsigned int Accounts_Friends_Count(Account_t *acc);
+qboolean Accounts_Friends_IsFriend(Account_t *acc, int otherId);
 void Svcmd_MergeAccounts_f(void) {
 	if (trap_Argc() < 3) {
 		Com_Printf("Usage:\nmergeaccounts <srcUsername> <dstUsername>\n"
@@ -132,6 +134,16 @@ void Svcmd_MergeAccounts_f(void) {
 	if (Auths_AccHasAdmin(src) || Accounts_Property_HasKeys(src)) {
 		Com_Printf("Source account has authfiles or property. Transfer these manually first.\n");
 		return;
+	}
+	if (Accounts_Friends_Count(src)) {
+		Com_Printf("Source account has friends. Transfer these manually before merging.\n");
+		return;
+	}
+	for (unsigned int i = 0; i < Accounts_Count(); i++) {
+		if (Accounts_Friends_IsFriend(Accounts_Get(i), Accounts_GetId(src))) {
+			Com_Printf("Source account is on another account's friends list. Update these references before merging.\n");
+			return;
+		}
 	}
 	// Move every character.
 	while (Account_GetNumCharacters(src) > 0) {
