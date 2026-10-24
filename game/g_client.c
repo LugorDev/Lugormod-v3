@@ -4395,7 +4395,10 @@ void ClientSpawn(gentity_t *ent) {
 	qboolean			inSiegeWithClass = qfalse;
 	index = ent - g_entities;
 	client = ent->client;
-	SSkills_Reset(ent, qfalse);
+	if (index >= 0 && index < MAX_CLIENTS) {
+		ent->s.number = index;
+		SSkills_Reset(ent, qfalse);
+	}
 
 	//RoboPhred: why index var?  I kinda remember there being an issue where ent->s.number was invalid...  Well, fix it!
 
