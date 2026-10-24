@@ -60,5 +60,7 @@ int SSkills_Damage(gentity_t *target, gentity_t *attacker, gentity_t *inflictor,
 qboolean SSkills_ForceAllowed(gentity_t *attacker, gentity_t *target, int power);
 int SSkills_Regen(gentity_t *ent, int amount);
 void lmd_skillshop(gentity_t *ent);
+void SSkills_ShopOpen(gentity_t *shop, gentity_t *player);
+void SSkills_ShopMenu(gentity_t *player, gentity_t *shop, usercmd_t *cmd);
 
 #endif

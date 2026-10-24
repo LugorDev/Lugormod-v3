@@ -22,6 +22,9 @@ void G_Knockdown(gentity_t *ent, int duration);
 qboolean isBuddy(gentity_t *ent, gentity_t *other);
 static int Kebab_HasSkill(Account_t *acc, int index, qboolean check);
 static int Kebab_PassiveSkill(gentity_t *ent, int index);
+static void SSkills_ShopClose(gentity_t *player);
+void lmd_menu_enter(gentity_t *player, gentity_t *menu);
+void lmd_menu_exit(gentity_t *player);
 static gentity_t *SSkills_Entity(int number) {
     if (number < 0 || number >= level.num_entities) return NULL;
     return g_entities[number].inuse ? &g_entities[number] : NULL;
@@ -70,6 +73,15 @@ typedef struct sskillState_s {
 	int fpcap;
 	int battlemedfx;
 	int stompstr;
+    int shopEntity;
+    int shopProfession;
+    Character_t *shopCharacter;
+    int shopSelection;
+    qboolean shopConfirm;
+    int shopConfirmChoice;
+    int shopQuotedPrice;
+    qboolean shopHadGodmode;
+    char shopNotice[96];
 } sskillState_t;
 typedef struct starSkill_s
 {
@@ -1357,6 +1369,7 @@ void SSkills_Init(void)
 void SSkills_Reset(gentity_t *ent, qboolean disconnect)
 {
     if (!ent || !ent->client || ent->s.number < 0 || ent->s.number >= MAX_CLIENTS) return;
+    SSkills_ShopClose(ent);
     sskillState_t *state = &p_playerInfo[ent->s.number];
     int cooldowns[NUM_SKILLS];
     memcpy(cooldowns, state->cds, sizeof(cooldowns));
@@ -1421,6 +1434,8 @@ void SSkills_Think(gentity_t *ent)
 {
     if (!PLAYERISVALID(ent)) return;
     sskillState_t *s = &p_playerInfo[ent->s.number];
+    if (s->shopEntity && ent->client->Lmd.lmdMenu.entityNum != s->shopEntity)
+        SSkills_ShopClose(ent);
     if (!Kebab_EnableSkills() || ent->health <= 0 || ent->client->sess.sessionTeam == TEAM_SPECTATOR ||
         duelInProgress(&ent->client->ps) || !ent->client->pers.Lmd.account) {
         SSkills_Reset(ent, qfalse);
@@ -1611,26 +1626,194 @@ void SSkills_Demolition(gentity_t *attacker, float *damage, float *radius, int m
 static qboolean SSkills_ShopAccess(gentity_t *shop, gentity_t *player)
 {
     extern qboolean PlayerUseableCheck(gentity_t *, gentity_t *);
-    return PLAYERISVALID(player) && Kebab_EnableSkills() && !(shop->flags & FL_INACTIVE) &&
+    return shop && PLAYERISVALID(player) && Kebab_EnableSkills() && !(shop->flags & FL_INACTIVE) &&
         PlayerUseableCheck(shop, player) && DistanceSquared(shop->r.currentOrigin, player->client->ps.origin) <= shop->radius * shop->radius;
+}
+
+#define SSKILLS_SHOP_PAGE_SIZE 5
+
+static void SSkills_ShopClose(gentity_t *player)
+{
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    if (!s->shopEntity) return;
+    int number = s->shopEntity;
+    qboolean restoreGodmode = s->shopHadGodmode;
+    s->shopEntity = 0;
+    s->shopCharacter = NULL;
+    s->shopConfirm = qfalse;
+    if (player->client->Lmd.lmdMenu.entityNum == number) {
+        lmd_menu_exit(player);
+        trap_SendServerCommand(player->s.number, "cp \" \"");
+    }
+    if (restoreGodmode) player->flags |= FL_GODMODE;
+    if (number > 0 && number < MAX_GENTITIES && player->client->Lmd.interact.targ == &g_entities[number])
+        Interact_Clear(player);
+}
+
+static int SSkills_ShopCatalogue(int profession, int skills[NUM_SKILLS])
+{
+    int count = 0;
+    for (int i = 0; i < NUM_SKILLS; i++) {
+        if (starSkills[i].prof == profession || starSkills[i].prof == PROFESSION_BOTH)
+            skills[count++] = i;
+    }
+    return count;
+}
+
+static void SSkills_ShopDescription(char *message, int size, const char *description)
+{
+    int column = 0;
+    for (const char *p = description; *p; p++) {
+        char text[2] = {*p, 0};
+        if (*p == ' ' && column >= 54) {
+            text[0] = '\n';
+            column = 0;
+        } else column++;
+        Q_strcat(message, size, text);
+    }
+    Q_strcat(message, size, "\n\n");
+}
+
+static void SSkills_ShopDraw(gentity_t *player)
+{
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    Account_t *account = player->client->pers.Lmd.account;
+    int skills[NUM_SKILLS];
+    int count = SSkills_ShopCatalogue(s->shopProfession, skills);
+    char message[MAX_STRING_CHARS];
+    Q_strncpyz(message, va("^5Special Skill Shop\n^7Credits: ^2%d\n\n", Accounts_GetCredits(account)), sizeof(message));
+    if (s->shopConfirm && s->shopSelection < count) {
+        int index = skills[s->shopSelection];
+        qboolean owned = Kebab_HasSkill(account, index, qfalse);
+        Q_strcat(message, sizeof(message), va("^3%s ^7(%s)\n", starSkills[index].name,
+            starSkills[index].isPassive ? "Passive" : "Active"));
+        SSkills_ShopDescription(message, sizeof(message), starSkills[index].desc);
+        Q_strcat(message, sizeof(message), va("^7Price: ^2%d credits\n", SSkills_Price(index)));
+        if (owned) Q_strcat(message, sizeof(message), "^2Already owned\n\n^3[ Back ]\n");
+        else {
+            Q_strcat(message, sizeof(message), s->shopConfirmChoice == 0 ? "\n^3[ Buy skill ]\n^7  Cancel\n" : "\n^7  Buy skill\n^3[ Cancel ]\n");
+        }
+    } else {
+        int page = min(s->shopSelection / SSKILLS_SHOP_PAGE_SIZE, max(0, (count - 1) / SSKILLS_SHOP_PAGE_SIZE));
+        Q_strcat(message, sizeof(message), va("^7Page %d/%d\n", page + 1, max(1, (count + SSKILLS_SHOP_PAGE_SIZE - 1) / SSKILLS_SHOP_PAGE_SIZE)));
+        int end = min(count, (page + 1) * SSKILLS_SHOP_PAGE_SIZE);
+        for (int row = page * SSKILLS_SHOP_PAGE_SIZE; row < end; row++) {
+            int index = skills[row];
+            Q_strcat(message, sizeof(message), va("%s%s%s - %d CR%s\n",
+                row == s->shopSelection ? "^3[ " : "^7  ", starSkills[index].name,
+                row == s->shopSelection ? " ]" : "", SSkills_Price(index),
+                Kebab_HasSkill(account, index, qfalse) ? " ^2Owned" : ""));
+        }
+        Q_strcat(message, sizeof(message), s->shopSelection == count ? "\n^3[ Exit ]\n" : "\n^7  Exit\n");
+    }
+    if (s->shopNotice[0]) Q_strcat(message, sizeof(message), va("\n^2%s\n", s->shopNotice));
+    Q_strcat(message, sizeof(message), "\n^7Forward/Back: select | Use/Attack: confirm\nAlt Attack: back / close");
+    trap_SendServerCommand(player->s.number, va("cp \"%s\"", message));
+    player->client->Lmd.lmdMenu.nextUpdateTime = level.time + 1000;
+}
+
+static qboolean SSkills_ShopSessionValid(gentity_t *player, gentity_t *shop)
+{
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    return shop->inuse && shop->classname && !Q_stricmp(shop->classname, "lmd_skillshop") &&
+        s->shopEntity == shop->s.number && player->client->Lmd.lmdMenu.entityNum == s->shopEntity &&
+        player->client->pers.Lmd.character == s->shopCharacter &&
+        Account_GetActiveCharacter(player->client->pers.Lmd.account) == s->shopCharacter &&
+        PlayerAcc_Prof_GetProfession(player) == s->shopProfession && PlayerAcc_Prof_GetLevel(player) >= 40 &&
+        player->health > 0 && !player->client->ps.m_iVehicleNum && player->client->sess.sessionTeam != TEAM_SPECTATOR &&
+        !duelInProgress(&player->client->ps) && !(player->client->Lmd.flags & SNF_FREEZE) &&
+        player->client->pers.Lmd.jailTime <= level.time && SSkills_ShopAccess(shop, player);
+}
+
+void SSkills_ShopOpen(gentity_t *shop, gentity_t *player)
+{
+    if (!SSkills_ShopAccess(shop, player) || shop->s.number <= 0 || shop->s.number >= MAX_GENTITIES) return;
+    int profession = PlayerAcc_Prof_GetProfession(player);
+    if (!player->client->pers.Lmd.character || PlayerAcc_Prof_GetLevel(player) < 40 ||
+        (profession != PROF_JEDI && profession != PROF_MERC) || player->health <= 0 ||
+        player->client->sess.sessionTeam == TEAM_SPECTATOR || player->client->ps.m_iVehicleNum || duelInProgress(&player->client->ps) ||
+        (player->client->Lmd.flags & SNF_FREEZE) || player->client->pers.Lmd.jailTime > level.time) {
+        Disp(player, "^3Use the skill shop with an active level 40 Jedi or Mercenary.");
+        return;
+    }
+    SSkills_ShopClose(player);
+    if (player->client->Lmd.lmdMenu.entityNum) lmd_menu_exit(player);
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    s->shopHadGodmode = (player->flags & FL_GODMODE) != 0;
+    s->shopEntity = shop->s.number;
+    s->shopCharacter = player->client->pers.Lmd.character;
+    s->shopProfession = profession;
+    s->shopSelection = 0;
+    s->shopConfirm = qfalse;
+    s->shopNotice[0] = 0;
+    Interact_Set(player, shop, shop->r.currentOrigin, shop->radius, NULL);
+    lmd_menu_enter(player, shop);
+    SSkills_ShopDraw(player);
+}
+
+static void SSkills_ShopSelect(gentity_t *player)
+{
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    int skills[NUM_SKILLS];
+    int count = SSkills_ShopCatalogue(s->shopProfession, skills);
+    if (s->shopSelection >= count) { SSkills_ShopClose(player); return; }
+    int index = skills[s->shopSelection];
+    if (!s->shopConfirm) {
+        s->shopConfirm = qtrue;
+        s->shopConfirmChoice = 0;
+        s->shopQuotedPrice = SSkills_Price(index);
+        s->shopNotice[0] = 0;
+        return;
+    }
+    if (s->shopConfirmChoice || Kebab_HasSkill(player->client->pers.Lmd.account, index, qfalse)) {
+        s->shopConfirm = qfalse;
+        return;
+    }
+    if (s->shopQuotedPrice != SSkills_Price(index)) {
+        s->shopQuotedPrice = SSkills_Price(index);
+        Q_strncpyz(s->shopNotice, "Price changed. Please confirm again.", sizeof(s->shopNotice));
+        return;
+    }
+    qboolean bought = SSkills_Buy(player, index);
+    Q_strncpyz(s->shopNotice, bought ? "Skill purchased!" : "Purchase failed. No credits charged.", sizeof(s->shopNotice));
+    s->shopConfirm = qfalse;
+}
+
+void SSkills_ShopMenu(gentity_t *player, gentity_t *shop, usercmd_t *cmd)
+{
+    if (!PLAYERISVALID(player)) return;
+    if (!shop || !cmd || !SSkills_ShopSessionValid(player, shop)) { SSkills_ShopClose(player); return; }
+    sskillState_t *s = &p_playerInfo[player->s.number];
+    int skills[NUM_SKILLS];
+    int count = SSkills_ShopCatalogue(s->shopProfession, skills);
+    qboolean up = cmd->forwardmove > 0, down = cmd->forwardmove < 0;
+    qboolean select = (cmd->buttons & (BUTTON_USE | BUTTON_ATTACK)) != 0;
+    qboolean back = (cmd->buttons & BUTTON_ALT_ATTACK) != 0;
+    qboolean changed = qfalse;
+    if ((up && player->client->Lmd.lmdMenu.stoppedPressingForward) ||
+        (down && player->client->Lmd.lmdMenu.stoppedPressingBackward)) {
+        if (s->shopConfirm) s->shopConfirmChoice = !s->shopConfirmChoice;
+        else s->shopSelection = (s->shopSelection + (up ? count : 1)) % (count + 1);
+        changed = qtrue;
+    }
+    if (back && player->client->Lmd.lmdMenu.stoppedPressingAltAttack) {
+        if (s->shopConfirm) { s->shopConfirm = qfalse; changed = qtrue; }
+        else { SSkills_ShopClose(player); return; }
+    } else if (select && player->client->Lmd.lmdMenu.stoppedPressingUsing) {
+        SSkills_ShopSelect(player);
+        if (!s->shopEntity) return;
+        changed = qtrue;
+    }
+    player->client->Lmd.lmdMenu.stoppedPressingForward = !up;
+    player->client->Lmd.lmdMenu.stoppedPressingBackward = !down;
+    player->client->Lmd.lmdMenu.stoppedPressingUsing = !select;
+    player->client->Lmd.lmdMenu.stoppedPressingAltAttack = !back;
+    if (changed || level.time >= player->client->Lmd.lmdMenu.nextUpdateTime) SSkills_ShopDraw(player);
 }
 
 static void SSkills_ShopUse(gentity_t *self, gentity_t *other, gentity_t *player)
 {
-    if (!SSkills_ShopAccess(self, player)) return;
-    if (!player->client->pers.Lmd.account || PlayerAcc_Prof_GetLevel(player) < 40) {
-        Disp(player, "^3Log in with a level 40 Jedi or Mercenary to use this skill shop.");
-        return;
-    }
-    Interact_Set(player, self, self->r.currentOrigin, self->radius, NULL);
-    Disp(player, "^5Special Skill Shop: /interact <skill name> buy. Prices are shown below. /sskills <name> activates an owned skill.");
-    int prof = PlayerAcc_Prof_GetProfession(player);
-    for (int i = 0; i < NUM_SKILLS; i++) {
-        if (starSkills[i].prof != prof) continue;
-        Disp(player, va("^3%s ^7- %s: ^2%d CR%s", starSkills[i].cmdName, starSkills[i].name,
-            SSkills_Price(i), Kebab_HasSkill(player->client->pers.Lmd.account, i, qfalse) ? " ^5(owned)" : ""));
-    }
-    trap_SendServerCommand(player->s.number, "cp \"^5Special Skill Shop\n^7Skill list and prices are in your console.\n/interact <skill name> buy\n/sskills <name> to activate\"");
+    SSkills_ShopOpen(self, player);
 }
 
 static void SSkills_ShopInteract(gentity_t *self, gentity_t *player)
@@ -1656,10 +1839,11 @@ const entityInfoData_t lmd_skillshop_keys[] = {
     {"#UKEYS", NULL}, {"#MODEL", NULL}, {"#HITBOX", NULL},
     {"radius", "Maximum distance for purchases, default 128 units."},
     {"model", "Defaults to models/map_objects/factory/f_con1.md3."},
+    {"anim", "Menu animation: 0 console (default), 1 talk, 2 none."},
     {NULL, NULL}
 };
 entityInfo_t lmd_skillshop_info = {
-    "Level 40 special skill vendor. Use to list skills, /interact <name> buy to purchase.",
+    "Level 40 special skill vendor with an on-screen catalogue and purchase confirmation.",
     NULL, lmd_skillshop_keys
 };
 void lmd_skillshop(gentity_t *ent)
@@ -1667,6 +1851,7 @@ void lmd_skillshop(gentity_t *ent)
     extern void PlayerUsableGetKeys(gentity_t *);
     PlayerUsableGetKeys(ent);
     G_SpawnFloat("radius", "128", &ent->radius);
+    G_SpawnInt("anim", "0", &ent->Lmd.customIndex);
     ent->radius = max(32, min(512, ent->radius));
     if (!ent->model || !ent->model[0]) ent->model = "models/map_objects/factory/f_con1.md3";
     SpawnEntModel(ent, qtrue, qfalse);

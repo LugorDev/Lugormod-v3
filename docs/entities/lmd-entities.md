@@ -443,8 +443,10 @@ targetname  - make the trigger target this value for the entity to be used
 ```
 ## lmd_skillshop
 Premade level 40 special skill terminal with a default model and collision box.
-Place it with `/place lmd_skillshop`, press Use to see the catalogue, then enter
-`/interact <skill name> buy`. Use `/sskills <skill name>` to activate an owned
+Place it with `/place lmd_skillshop`, then press Use for the on-screen catalogue.
+Use Forward/Back to select, Use or Attack to confirm, and Alt Attack to go back
+or close. Selecting a skill shows its description and a Buy/Cancel confirmation.
+Prices, credits and ownership are displayed on screen. Use `/sskills <skill name>` to activate an owned
 ability. Purchases belong to the current character and survive profession changes.
 
 The shop supports the usual player requirement, model and hitbox keys. `radius`

@@ -25,9 +25,15 @@ console model. It can also be placed with the usual distance, model, angle,
 hitbox and player requirement keys. `/saveit <map entity set>` persists it using
 the existing entity saving system.
 
-Press Use at the vendor to see your profession's skills and prices in the
-console. `/interact <short name>` shows a description; `/interact <short name>
-buy` purchases it. Purchases require a level 40 character, the matching
+Press Use at the vendor to open a paged on-screen menu of your profession's
+skills, prices and ownership status, with your current credit balance at the top.
+Forward/Back selects a skill; Use or Attack opens its description and purchase
+confirmation. Select Buy or Cancel, or press Alt Attack to go back or close the
+menu. Holding a button does not repeat purchases. Each player has an independent
+menu, and leaving the vendor or changing character closes it. A changed price
+must be confirmed again. No console commands are needed for menu purchases;
+`/interact <short name> buy` remains available as an optional shortcut.
+Purchases require a level 40 character, the matching
 profession, enough credits, and proximity to the vendor. Duplicate purchases do
 not charge credits. A failed account-file open refunds the purchase.
 
@@ -52,7 +58,9 @@ Build with `-DLMD_REGRESSION_TESTS=ON`, then run
 `ctest --test-dir build -C Release --output-on-failure`. The mock-engine tests
 exercise account migration and round trips, character isolation, purchase
 requirements, duplicate purchases, failed-save refunds, ability resource costs,
-shield cleanup, and cooldowns surviving respawns.
+shield cleanup, and cooldowns surviving respawns. Menu input tests cover
+confirmation, held buttons, cancellation, paging, changing prices, simultaneous
+users, character changes, distance checks and godmode restoration on closure.
 
 Before deployment, use a separate test server and account directory to check
 terminal placement and collision, the full skill catalogue, ranged targets,

@@ -55,6 +55,7 @@ static size_t savedLength;
 static int failOpen;
 static int checks;
 static const char *commandArgs[4];
+static char screens[MAX_CLIENTS][MAX_STRING_CHARS + 32];
 #define CHECK(condition) do { checks++; if (!(condition)) { \
   fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #condition); exit(1); } } while (0)
 
@@ -69,8 +70,13 @@ static int QDECL mockEngine(int call, ...) {
         Q_strncpyz(out, index < 4 && commandArgs[index] ? commandArgs[index] : "", size);
         break;
     }
-    case G_SEND_SERVER_COMMAND:
+    case G_SEND_SERVER_COMMAND: {
+        int client = va_arg(args, int);
+        const char *message = va_arg(args, const char *);
+        if (client >= 0 && client < MAX_CLIENTS && !strncmp(message, "cp ", 3))
+            Q_strncpyz(screens[client], message, sizeof(screens[client]));
         break;
+    }
     case G_REAL_TIME: {
         qtime_t *now = va_arg(args, qtime_t *);
         memset(now, 0, sizeof(*now));
@@ -110,6 +116,17 @@ static int QDECL mockEngine(int call, ...) {
     }
     va_end(args);
     return 0;
+}
+
+static void shopInput(gentity_t *player, gentity_t *shop, int movement, int buttons) {
+    usercmd_t command = {0};
+    command.forwardmove = movement;
+    command.buttons = buttons;
+    SSkills_ShopMenu(player, shop, &command);
+}
+
+static void shopInteract(gentity_t *shop, gentity_t *player) {
+    SSkills_ShopOpen(shop, player);
 }
 
 int main(void) {
@@ -262,6 +279,96 @@ int main(void) {
     Use_Target_Fp(&target, NULL, &player);
     CHECK(client.ps.fd.forcePowerLevel[FP_PUSH] == 0);
     CHECK(client.ps.fd.forcePowerLevel[FP_PULL] == 2);
+
+    // Drive the actual on-screen menu using the same input packets as the server.
+    gentity_t *shop = &g_entities[MAX_CLIENTS];
+    shop->inuse = qtrue;
+    shop->s.number = MAX_CLIENTS;
+    shop->classname = "lmd_skillshop";
+    shop->interact = shopInteract;
+    shop->radius = 128;
+    shop->Lmd.customIndex = 2; // No console animation needed in the mock engine.
+    Accounts_SetCredits(copy, 2000);
+    SSkills_ShopOpen(shop, &player);
+    CHECK(client.Lmd.lmdMenu.entityNum == shop->s.number);
+    CHECK(strstr(screens[0], "Special Skill Shop") && strstr(screens[0], "Force Body"));
+    CHECK(strstr(screens[0], "Page 1/4"));
+    shopInput(&player, shop, 0, 0); // Release the opening Use press.
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(strstr(screens[0], "Buy skill"));
+    CHECK(Accounts_GetCredits(copy) == 2000);
+    shopInput(&player, shop, 0, BUTTON_USE); // Holding Use cannot buy.
+    CHECK(Accounts_GetCredits(copy) == 2000);
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    CHECK(strstr(screens[0], "Skill purchased!") && strstr(screens[0], "Owned"));
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, -127, 0); // Destruction.
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, 0, BUTTON_ATTACK);
+    CHECK(strstr(screens[0], "Force Destruction") && strstr(screens[0], "Buy skill"));
+    shopInput(&player, shop, 0, BUTTON_ALT_ATTACK);
+    CHECK(!strstr(screens[0], "Buy skill"));
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, 0, BUTTON_USE);
+    lmd_skillCreditCost.integer = 200;
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(strstr(screens[0], "Price changed"));
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(Accounts_GetCredits(copy) == 1300);
+    for (int i = 0; i < 5; i++) {
+        shopInput(&player, shop, 0, 0);
+        shopInput(&player, shop, -127, 0);
+    }
+    CHECK(strstr(screens[0], "Page 2/4"));
+    shopInput(&player, shop, 0, BUTTON_ALT_ATTACK);
+    CHECK(client.Lmd.lmdMenu.entityNum == 0);
+    CHECK(!(player.flags & FL_GODMODE));
+
+    // Each player keeps an independent catalogue and cursor at the same vendor.
+    static gentity_t otherPlayer;
+    static gclient_t otherClient;
+    otherPlayer.inuse = qtrue;
+    otherPlayer.client = &otherClient;
+    otherPlayer.s.number = 1;
+    otherPlayer.health = 100;
+    otherClient.sess.sessionTeam = TEAM_FREE;
+    otherClient.pers.Lmd.account = acc;
+    otherClient.pers.Lmd.character = Account_GetActiveCharacter(acc);
+    Accounts_Prof_SetLevel(acc, 40);
+    SSkills_ShopOpen(shop, &player);
+    SSkills_ShopOpen(shop, &otherPlayer);
+    CHECK(strstr(screens[0], "Force Body"));
+    CHECK(strstr(screens[1], "Slow Regeneration"));
+    shopInput(&player, shop, 0, 0);
+    shopInput(&player, shop, -127, 0);
+    otherClient.Lmd.lmdMenu.nextUpdateTime = 0;
+    shopInput(&otherPlayer, shop, 0, 0);
+    CHECK(strstr(screens[1], "[ Slow Regeneration ]"));
+    shopInput(&otherPlayer, shop, 0, BUTTON_ALT_ATTACK);
+    CHECK(otherClient.Lmd.lmdMenu.entityNum == 0);
+    CHECK(client.Lmd.lmdMenu.entityNum == shop->s.number);
+    client.pers.Lmd.character = second;
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(client.Lmd.lmdMenu.entityNum == 0);
+    CHECK(Accounts_GetCredits(copy) == 1300);
+    client.pers.Lmd.character = first;
+
+    // Forced closure restores existing godmode and prevents remote purchases.
+    player.flags |= FL_GODMODE;
+    SSkills_ShopOpen(shop, &player);
+    client.ps.origin[0] = 1000;
+    shopInput(&player, shop, 0, BUTTON_USE);
+    CHECK(client.Lmd.lmdMenu.entityNum == 0);
+    CHECK(player.flags & FL_GODMODE);
+    CHECK(Accounts_GetCredits(copy) == 1300);
 
     printf("Passed %d checks.\n", checks);
     return 0;

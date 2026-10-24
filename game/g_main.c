@@ -65,6 +65,7 @@ const char *verMods =
 #include "Lmd_Data.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_Medilevitate.h"
+#include "Lmd_SpecialSkills.h"
 
 level_locals_t	level;
 
@@ -5763,7 +5764,11 @@ ContinueThink:
 					{
 						if (ent->client->pers.cmd.serverTime > ent->client->Lmd.lmdMenu.lastServerTime)
 						{
-							if (menu->classname && Q_stricmp(menu->classname, "lmd_trainer") == 0)
+							if (menu->classname && !Q_stricmp(menu->classname, "lmd_skillshop"))
+							{
+								SSkills_ShopMenu(ent, menu, &ent->client->pers.cmd);
+							}
+							else if (menu->classname && Q_stricmp(menu->classname, "lmd_trainer") == 0)
 							{
 								if (level.time >= ent->client->Lmd.lmdMenu.nextUpdateTime)
 								{
