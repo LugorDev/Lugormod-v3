@@ -809,8 +809,10 @@ qboolean Auths_AccHasAuthFlag(Account_t *acc, int auth) {
 
 qboolean Auths_PlayerHasAuthFlag(gentity_t *ent, int auth) {
 	int i;
+	if (!ent || !ent->client || auth < 0 || auth >= AUTH_MAX)
+		return qfalse;
 	//Check temporary auths
-	for(i = 0; i < ent->client->sess.Lmd.auths->count; i++) {
+	for(i = 0; ent->client->sess.Lmd.auths && i < ent->client->sess.Lmd.auths->count; i++) {
 		if(ent->client->sess.Lmd.auths->list[i].file->flags & (1 << auth))
 			return qtrue;
 	}
