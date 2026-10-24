@@ -435,14 +435,14 @@ void NPC_SetMiscDefaultData( gentity_t *ent )
 					//shotgunner
 					if ( !Q_stricmp( "stofficeralt", ent->NPC_type ) )
 					{
-						//ent->NPC->scriptFlags |= SCF_ALT_FIRE;
+						ent->NPC->scriptFlags |= SCF_ALT_FIRE;
 					}
 					break;
 				case WP_ROCKET_LAUNCHER:
 					break;
 				case WP_THERMAL:
 					//Gran, use main, bouncy fire
-					//					ent->NPC->scriptFlags |= SCF_ALT_FIRE;
+										ent->NPC->scriptFlags |= SCF_ALT_FIRE;
 					break;
 				case WP_STUN_BATON:
 					break;
@@ -457,7 +457,7 @@ void NPC_SetMiscDefaultData( gentity_t *ent )
 					}
 					if ( !Q_stricmp( "rodian2", ent->NPC_type ) )
 					{
-						//ent->NPC->scriptFlags |= SCF_ALT_FIRE;
+						ent->NPC->scriptFlags |= SCF_ALT_FIRE;
 					}
 					break;
 				}

@@ -1,6 +1,8 @@
 //[CrashLog]
 #include "g_local.h"
 
+#define CRASH_HANDLER 1
+
 #ifdef CRASH_HANDLER
 //For debugging in GCC
 //#define NO_LINUX_CRASHHANDLER

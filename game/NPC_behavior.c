@@ -920,9 +920,30 @@ void NPC_BSJump (void)
 
 void NPC_BSRemove (void)
 {
+	int i;
+	qboolean inClientPVS = qfalse;
+
 	NPC_UpdateAngles ( qtrue, qtrue );
-	if( !trap_InPVS( NPC->r.currentOrigin, g_entities[0].r.currentOrigin ) )//FIXME: use cg.vieworg?
-	{ //rwwFIXMEFIXME: Care about all clients instead of just 0?
+
+	// Check if this NPC is in the PVS of any client
+	for ( i = 0; i < MAX_CLIENTS; i++ )
+	{
+		gentity_t *player = &g_entities[i];
+
+		if ( !player || !player->client || !player->inuse )
+		{
+			continue;
+		}
+
+		if ( trap_InPVS( NPC->r.currentOrigin, player->r.currentOrigin ) )
+		{
+			inClientPVS = qtrue;
+			break;
+		}
+	}
+
+	if ( !inClientPVS )
+	{
 		G_UseTargets2( NPC, NPC, NPC->target3 );
 		NPC->s.eFlags |= EF_NODRAW;
 		NPC->s.eType = ET_INVISIBLE;
@@ -933,7 +954,7 @@ void NPC_BSRemove (void)
 		//Disappear in half a second
 		NPC->think = G_FreeEntity;
 		NPC->nextthink = level.time + FRAMETIME;
-	}//FIXME: else allow for out of FOV???
+	}
 }
 
 void NPC_BSSearch (void)
@@ -1315,28 +1336,52 @@ extern void G_AddVoiceEvent( gentity_t *self, int event, int speakDebounceTime )
 extern void WP_DropWeapon( gentity_t *dropper, vec3_t velocity );
 extern void ChangeWeapon( gentity_t *ent, int newWeapon );
 void NPC_Surrender( void )
-{//FIXME: say "don't shoot!" if we weren't already surrendering
-	if ( NPC->client->ps.weaponTime || PM_InKnockDown( &NPC->client->ps ) )
+{
+	// Cannot surrender while busy or knocked down
+	if ( NPC->client->ps.weaponTime ||
+		 PM_InKnockDown( &NPC->client->ps ) )
 	{
 		return;
 	}
-	if ( NPC->s.weapon != WP_NONE && 
-		NPC->s.weapon != WP_STUN_BATON &&
-		NPC->s.weapon != WP_SABER )
+
+	// Enter surrender state if not already in it
+	if ( NPCInfo->surrenderTime < level.time )
 	{
-		//WP_DropWeapon( NPC, NULL ); //rwwFIXMEFIXME: Do this (gonna need a system for notifying client of removal)
+		// Drop weapon if applicable
+		if ( NPC->s.weapon != WP_NONE &&
+			 NPC->s.weapon != WP_STUN_BATON &&
+			 NPC->s.weapon != WP_SABER )
+		{
+			//TossClientWeapon(NPC, NPC->client->ps.viewangles, 200);
+		}
+
+		// Play surrender animation
+		NPC_SetAnim(
+			NPC,
+			SETANIM_TORSO,
+			TORSO_SURRENDER_START,
+			SETANIM_FLAG_HOLD | SETANIM_FLAG_OVERRIDE
+		);
+		NPC->client->ps.torsoTimer = 1000;
+
+		// Say "don't shoot!" once
+		if ( NPCInfo->blockedSpeechDebounceTime < level.time )
+		{
+			G_AddVoiceEvent(
+				NPC,
+				Q_irand( EV_PUSHED1, EV_PUSHED3 ),
+				3000
+			);
+			NPCInfo->blockedSpeechDebounceTime = level.time + 5000;
+		}
 	}
-	if ( NPCInfo->surrenderTime < level.time - 5000 )
-	{//haven't surrendered for at least 6 seconds, tell them what you're doing
-		//FIXME: need real dialogue EV_SURRENDER
-		NPCInfo->blockedSpeechDebounceTime = 0;//make sure we say this
-		G_AddVoiceEvent( NPC, Q_irand( EV_PUSHED1, EV_PUSHED3 ), 3000 );
-	}
-//	NPC_SetAnim( NPC, SETANIM_TORSO, TORSO_SURRENDER_START, SETANIM_FLAG_HOLD|SETANIM_FLAG_OVERRIDE );
-//	NPC->client->ps.torsoTimer = 1000;
-	NPCInfo->surrenderTime = level.time + 1000;//stay surrendered for at least 1 second
-	//FIXME: while surrendering, make a big sight/sound alert? Or G_AlertTeam?
+
+	// Stay surrendered for at least 1 second from now
+	NPCInfo->surrenderTime = level.time + 1000;
+
+	G_AlertTeam( NPC, NPC->enemy, 512, 512 );
 }
+
 
 qboolean NPC_CheckSurrender( void )
 {
@@ -1606,19 +1651,12 @@ void NPC_StartFlee( gentity_t *enemy, vec3_t dangerPoint, int dangerLevel, int f
 	}
 	else
 	{//need to just run like hell!
-		if ( NPC->s.weapon != WP_NONE )
-		{
-			return;//let's just not flee?
-		}
-		else
-		{
-			//FIXME: other evasion AI?  Duck?  Strafe?  Dodge?
-			NPCInfo->tempBehavior = BS_FLEE;
-			//Run straight away from here... FIXME: really want to find farthest waypoint/navgoal from this pos... maybe based on alert event radius?
-			NPC_SetMoveGoal( NPC, dangerPoint, 0, qtrue, -1, NULL );
-			//store the danger point
-			VectorCopy( dangerPoint, NPCInfo->investigateGoal );//FIXME: make a new field for this?
-		}
+		//FIXME: other evasion AI?  Duck?  Strafe?  Dodge?
+		NPCInfo->tempBehavior = BS_FLEE;
+		//Run straight away from here... FIXME: really want to find farthest waypoint/navgoal from this pos... maybe based on alert event radius?
+		NPC_SetMoveGoal( NPC, dangerPoint, 0, qtrue, -1, NULL );
+		//store the danger point
+		VectorCopy( dangerPoint, NPCInfo->investigateGoal );//FIXME: make a new field for this?
 	}
 	//FIXME: localize this Timer?
 	TIMER_Set( NPC, "attackDelay", Q_irand( 500, 2500 ) );

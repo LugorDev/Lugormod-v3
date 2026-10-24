@@ -1,5 +1,7 @@
 //NPC_utils.cpp
 
+#include <float.h>
+
 #include "b_local.h"
 #include "../icarus/Q3_Interface.h"
 #include "../ghoul2/G2.h"
@@ -1247,6 +1249,44 @@ static int NPC_GetCheckDelta( void )
 }
 */
 
+qboolean NPC_HeardEnemy( gentity_t *enemy )
+{
+	if ( !enemy || !enemy->client )
+		return qfalse;
+
+	// Ignore if crouched (stealth)
+	if ( enemy->client->ps.pm_flags & PMF_DUCKED )
+		return qfalse;
+
+	// Horizontal movement only
+	if ( fabs(enemy->client->ps.velocity[0]) < 20 &&
+		 fabs(enemy->client->ps.velocity[1]) < 20 )
+		return qfalse;
+
+	float distSq = DistanceSquared(
+		NPC->r.currentOrigin,
+		enemy->r.currentOrigin
+	);
+
+	float hearRange = NPCInfo->stats.earshot > 0
+		? NPCInfo->stats.earshot
+		: 512.0f;
+
+	if ( distSq > hearRange * hearRange )
+		return qfalse;
+
+	// Optional: reaction delay
+	if ( level.time - NPCInfo->enemyLastHeardTime < 500 )
+		return qfalse;
+
+	NPCInfo->enemyLastHeardTime = level.time;
+	VectorCopy(enemy->r.currentOrigin, NPCInfo->enemyLastHeardLocation);
+
+	return qtrue;
+}
+
+
+
 /*
 -------------------------
 NPC_FindNearestEnemy
@@ -1258,53 +1298,70 @@ NPC_FindNearestEnemy
 
 int NPC_FindNearestEnemy( gentity_t *ent )
 {
-	int			iradiusEnts[ MAX_RADIUS_ENTS ];
-	gentity_t	*radEnt;
-	vec3_t		mins, maxs;
-	int			nearestEntID = -1;
-	float		nearestDist = (float)WORLD_SIZE*(float)WORLD_SIZE;
-	float		distance;
-	int			numEnts, numChecks = 0;
-	int			i;
+	int         ents[MAX_RADIUS_ENTS];
+	vec3_t      mins, maxs;
+	int         bestClear = -1, bestBlocked = -1;
+	float       bestClearDist = FLT_MAX;
+	float       bestBlockedDist = FLT_MAX;
 
-	//Setup the bbox to search in
-	for ( i = 0; i < 3; i++ )
+	for ( int i = 0; i < 3; i++ )
 	{
 		mins[i] = ent->r.currentOrigin[i] - NPCInfo->stats.visrange;
 		maxs[i] = ent->r.currentOrigin[i] + NPCInfo->stats.visrange;
 	}
 
-	//Get a number of entities in a given space
-	numEnts = trap_EntitiesInBox( mins, maxs, iradiusEnts, MAX_RADIUS_ENTS );
+	int num = trap_EntitiesInBox( mins, maxs, ents, MAX_RADIUS_ENTS );
 
-	for ( i = 0; i < numEnts; i++ )
+	for ( int i = 0; i < num; i++ )
 	{
-		radEnt = &g_entities[iradiusEnts[i]];
-		//Don't consider self
-		if ( radEnt == ent )
+		gentity_t *e = &g_entities[ents[i]];
+		trace_t tr;
+		vec3_t from, to;
+
+		if ( e == ent )
 			continue;
 
-		//Must be valid
-		if ( NPC_ValidEnemy( radEnt ) == qfalse )
+		if ( !NPC_ValidEnemy( e ) )
 			continue;
 
-		numChecks++;
-		//Must be visible
-		if ( NPC_TargetVisible( radEnt ) == qfalse )
+		const qboolean inFOV = NPC_TargetVisible(e);
+		const qboolean heard = NPC_HeardEnemy(e);
+
+		if (!inFOV && !heard)
 			continue;
 
-		distance = DistanceSquared( ent->r.currentOrigin, radEnt->r.currentOrigin );
 
-		//Found one closer to us
-		if ( distance < nearestDist )
+		const float dist = DistanceSquared(ent->r.currentOrigin, e->r.currentOrigin);
+
+		VectorCopy( ent->r.currentOrigin, from );
+		from[2] += 32;
+
+		VectorCopy( e->r.currentOrigin, to );
+		to[2] += 32;
+
+		trap_Trace( &tr, from, NULL, NULL, to, ent->s.number, MASK_SHOT );
+
+		if ( tr.entityNum == e->s.number )
 		{
-			nearestEntID = radEnt->s.number;
-			nearestDist = distance;
+			if ( dist < bestClearDist )
+			{
+				bestClearDist = dist;
+				bestClear = e->s.number;
+			}
+		}
+		else
+		{
+			if ( dist < bestBlockedDist )
+			{
+				bestBlockedDist = dist;
+				bestBlocked = e->s.number;
+			}
 		}
 	}
 
-	return nearestEntID;
+	return ( bestClear != -1 ) ? bestClear : bestBlocked;
 }
+
 
 /*
 -------------------------
@@ -1457,9 +1514,21 @@ qboolean NPC_FindEnemy( qboolean checkAlerts )
 		return qtrue;
 	}
 
-	//If we've gotten here alright, then our target it still valid
 	if ( NPC_ValidEnemy( NPC->enemy ) )
-		return qtrue;
+	{
+		int bestID = NPC_FindNearestEnemy( NPC );
+
+		if ( bestID == -1 )
+		{
+			return qtrue;
+		}
+
+		if ( &g_entities[bestID] == NPC->enemy )
+		{
+			return qtrue;
+		}
+	}
+
 
 	newenemy = NPC_PickEnemyExt( checkAlerts );
 

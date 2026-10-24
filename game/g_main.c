@@ -5846,7 +5846,7 @@ ContinueThink:
 			int j;
 			// turn off any expired powerups
 			for ( j = 0 ; j < MAX_POWERUPS ; j++ ) {
-				if ( ent->client->ps.powerups[ j ] < level.time ) {
+				if ( ent->client->ps.powerups[ j ] && ent->client->ps.powerups[ j ] < level.time ) {
 					ent->client->ps.powerups[ j ] = 0;
 				}
 			}

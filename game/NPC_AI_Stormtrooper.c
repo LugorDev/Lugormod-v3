@@ -1208,7 +1208,7 @@ void NPC_BSST_Idle( void )
 ST_CheckMoveState
 -------------------------
 */
-
+extern int NPC_FindNearestEnemy( gentity_t *ent );
 static void ST_CheckMoveState( void )
 {
 	if ( trap_ICARUS_TaskIDPending( NPC, TID_MOVE_NAV ) )
@@ -1218,6 +1218,12 @@ static void ST_CheckMoveState( void )
 	//See if we're a scout
 	else if ( NPCInfo->squadState == SQUAD_SCOUT )
 	{
+		int newEnemyNum = NPC_FindNearestEnemy( NPC );
+
+		if ( newEnemyNum != -1 )
+			G_SetEnemy(NPC, &g_entities[newEnemyNum]);
+
+		
 		//If we're supposed to stay put, then stand there and fire
 		if ( TIMER_Done( NPC, "stick" ) == qfalse )
 		{
@@ -2388,8 +2394,6 @@ void ST_Commander( void )
 			}
 			else if ( NPCInfo->squadState == SQUAD_SCOUT )
 			{//we couldn't find a combatPoint by the player, so just go after him directly
-				ST_HuntEnemy( NPC );
-				//set me into scout mode
 				AI_GroupUpdateSquadstates( group, NPC, SQUAD_SCOUT );
 				//AI should take care of rest
 			}
@@ -2539,11 +2543,23 @@ void NPC_BSST_Attack( void )
 		}
 		else
 		{//can we shoot our target?
-			if ( (NPC->client->ps.weapon == WP_ROCKET_LAUNCHER || (NPC->client->ps.weapon == WP_FLECHETTE && (NPCInfo->scriptFlags&SCF_ALT_FIRE))) && enemyDist < MIN_ROCKET_DIST_SQUARED )//128*128
+			if ( qfalse ) //(NPC->client->ps.weapon == WP_ROCKET_LAUNCHER || (NPC->client->ps.weapon == WP_FLECHETTE && (NPCInfo->scriptFlags&SCF_ALT_FIRE))) && enemyDist < MIN_ROCKET_DIST_SQUARED )//128*128
 			{
-				enemyCS = qfalse;//not true, but should stop us from firing
-				hitAlly = qtrue;//us!
-				//FIXME: if too close, run away!
+				enemyCS = qfalse;
+				if (NPCInfo->scriptFlags & SCF_DONT_FLEE)
+				{
+					NPC_Surrender();
+					NPC_UpdateAngles( qtrue, qtrue );
+					return;
+				}
+				else
+				{
+					if ( NPCInfo->behaviorState != BS_FLEE)
+					{
+						NPC_StartFlee( NPC->enemy, NPC->enemy->r.currentOrigin, AEL_DANGER_GREAT, 1500, 4500 );
+					}
+					return;
+				}
 			}
 			else if ( enemyInFOV )
 			{//if enemy is FOV, go ahead and check for shooting
