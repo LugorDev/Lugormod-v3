@@ -103,6 +103,40 @@ wait        - duration
 
 - this is an example of what you could use to make a button that would give the player a ysalarimi blast everytime he pressed the button.
 
+## target_fp ** (L)
+Applies custom Force power levels and/or a Force regeneration multiplier to whoever activates it.
+
+### Keys:
+
+```
+customskill                 - The name of the skill to check. (see lmd_customskill for details)
+customskillcompare          - Comparison type. -1 for direct compare (use this for text), 0 for greater or equal to, 1 for less than. 
+                              (default 0)
+customskillvalue            - The value to compare to.
+property                    - The property to check to fire this entity.
+profession                  - A bitmask of professions. Values: 1 - Jedi, 2 - Merc, 4 - Tech.
+level                       - Minimum player level.
+maxlevel                    - Maximum player level.
+adminlevel                  - Minimum admin level.
+playerflags                 - A bitmask of flags set by the lmd_playerflag entity.
+targetname                  - make the trigger target this value for the entity to be used.
+ModifyPowers                - Dot (`.`) separated list of Force power assignments in the format powernamelevel.
+                              For example `push3.lightning1` will set Force Push to level 3 and Lightning to level 1.
+                              Supported power names: jump, push, pull, speed, seeing, heal, protect, absorb, mindtrick,
+                              theal, grip, lightning, rage, drain, tforce, sattack, sdefend, sthrow.
+ResetPowers                 - If set to 1 the user's Force powers are reset to their normal values instead of applying
+                              `ModifyPowers`. (Default 0)
+ForceRegenSpeedMultiplier   - Multiplier applied to the player's Force regeneration speed. Must be greater than 0 to have an effect.
+```
+### Example code:
+
+```
+/place target_fp * targetname,force_buff,ModifyPowers,push3.lightning2.ForceRegenSpeedMultiplier,1.5,
+```
+
+- When triggered this target gives players Force Push level 3, Force Lightning level 2 and increases their Force regeneration speed by 50%.
+
+
 ## target_remove_powerups **
 Remove all powerups from the person who uses this. In U# It will not longer remove the stash glow effect when a player uses this.
 

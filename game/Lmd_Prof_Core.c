@@ -766,6 +766,12 @@ void Cmd_SkillSelect(gentity_t *ent, int prof, profSkill_t *skill, int depth) {
 		return;
 	}
 
+	if (ent->client->Lmd.targetFpUsed)
+	{
+		Disp(ent, "^1Your force powers have been set. Can't change right now. Wait for them to be reset or /kill.");
+		return;
+	}
+
 	trap_Argv(depth + 1, arg, sizeof(arg));
 	if(arg[0]) {
 		if(Q_stricmp(arg, "up") == 0) {

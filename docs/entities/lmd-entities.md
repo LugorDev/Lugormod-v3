@@ -410,6 +410,35 @@ targetname  - make the trigger target this value for the entity to be used
 ```
 /place lmd_toggle * target,red_light,target2,blue_light,target3,green_light,count,3,targetname,light_sequence,
 ```
+## lmd_trainer *(L)
+Interactive training menu that lets players view account information, learn professions, and upgrade skills via an on-screen interface.
+
+### Keys:
+
+```
+targetname  - Activate the trainer when triggered (for example from a button or lmd_terminal).
+Color1      - Color code used for the currently selected menu option. Defaults to ^3.
+Color2      - Color code used for the main body text. Defaults to ^7.
+Color3      - Color code used for highlighted information. Defaults to ^5.
+message     - Custom text shown on the landing screen. Use `.t` for the trainer name, `.l` for the player's level, and `.n` for the player's name.
+selectsnd   - Sound played when confirming a menu choice. Defaults to `sound/movers/switches/switch1.mp3`.
+navsnd      - Sound played while navigating the menu. Defaults to `sound/interface/menuroam.mp3`.
+cancelsnd   - Sound played when cancelling or closing the menu. Defaults to `sound/interface/esc.mp3`.
+prof        - Restrict usage to specific professions (0 = any, 1 = Jedi, 2 = Merc).
+subprof     - Restrict Force users to a side (0 = any, 1 = light, 2 = dark). Only applies when `prof` is 1.
+anim        - Player animation when the menu opens (0 = console, 1 = talk, 2 = none).
+```
+
+Players must have chosen a profession to access the trainer's skill menus. Trainers can be chained together by targeting them from an `lmd_terminal` or any other entity that fires a `use` event.
+
+### Example code:
+
+```
+/place lmd_trainer 0 targetname,trainer_menu,message,Welcome .n!,Color1,^2,Color2,^7,Color3,^5,prof,1,subprof,1,
+```
+
+- Creates a Jedi-only trainer that greets the player by name and uses custom menu colors.
+
 
 ## lmd_light **(L)
 Spawns a light on the map, recommended you add a number greater than 0 to the z-axis to see the whole light

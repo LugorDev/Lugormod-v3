@@ -612,6 +612,7 @@ struct gclient_s {
 		qboolean lockSaber;
 		int canPickUpWeapons;
 		float customForceRegenSpeedMultiplier;
+		qboolean targetFpUsed;
 	}Lmd;
 	unsigned int lastTargetUse;
 	unsigned int infoChanged;
