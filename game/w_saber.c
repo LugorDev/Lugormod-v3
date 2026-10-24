@@ -5360,7 +5360,7 @@ blockStuff:
 	return didHit;
 }
 
-GAME_INLINE int VectorCompare2( const vec3_t v1, const vec3_t v2 ) {
+static GAME_INLINE int VectorCompare2( const vec3_t v1, const vec3_t v2 ) {
 	if ( v1[0] > v2[0]+0.0001f || v1[0] < v2[0]-0.0001f
 		|| v1[1] > v2[1]+0.0001f || v1[1] < v2[1]-0.0001f
 		|| v1[2] > v2[2]+0.0001f || v1[2] < v2[2]-0.0001f ) {

@@ -102,6 +102,8 @@ void Svcmd_DeleteNick_f (void){
 
 gentity_t *Accounts_GetPlayerByAcc(Account_t *acc);
 qboolean Accounts_Property_HasKeys(Account_t *acc);
+unsigned int Accounts_Friends_Count(Account_t *acc);
+qboolean Accounts_Friends_IsFriend(Account_t *acc, int otherId);
 void Svcmd_MergeAccounts_f(void) {
 	if (trap_Argc() < 3) {
 		Com_Printf("Usage:\nmergeaccounts <srcUsername> <dstUsername>\n"
@@ -133,7 +135,19 @@ void Svcmd_MergeAccounts_f(void) {
 		Com_Printf("Source account has authfiles or property. Transfer these manually first.\n");
 		return;
 	}
+	if (Accounts_Friends_Count(src)) {
+		Com_Printf("Source account has friends. Transfer these manually before merging.\n");
+		return;
+	}
+	for (unsigned int i = 0; i < Accounts_Count(); i++) {
+		if (Accounts_Friends_IsFriend(Accounts_Get(i), Accounts_GetId(src))) {
+			Com_Printf("Source account is on another account's friends list. Update these references before merging.\n");
+			return;
+		}
+	}
 	// Move every character.
+	Character_t *srcActive = Account_GetActiveCharacter(src);
+	Character_t *dstActive = Account_GetActiveCharacter(dst);
 	while (Account_GetNumCharacters(src) > 0) {
 		Character_t *ch = Account_GetCharacter(src, 0);
 		if (!Account_MoveCharacter(src, ch, dst)) {
@@ -143,7 +157,11 @@ void Svcmd_MergeAccounts_f(void) {
 	}
 	// Persist the destination before removing the only durable source copy.
 	if (!Accounts_SaveChecked(dst)) {
-		Com_Printf("Destination save failed. Source account retained; fix storage before restarting.\n");
+		while (Account_GetNumCharacters(dst) > dstCount)
+			Account_MoveCharacter(dst, Account_GetCharacter(dst, dstCount), src);
+		Account_SetActiveCharacter(src, srcActive);
+		Account_SetActiveCharacter(dst, dstActive);
+		Com_Printf("Destination save failed. Character moves rolled back; source account retained.\n");
 		return;
 	}
 	Com_Printf("Merged %d character(s) from %s into %s. Deleting %s.\n",

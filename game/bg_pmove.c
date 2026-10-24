@@ -327,7 +327,7 @@ qboolean BG_KnockDownable(playerState_t *ps)
 #endif
 
 //hacky assumption check, assume any client non-humanoid is a rocket trooper
-qboolean PM_INLINE PM_IsRocketTrooper(void)
+static qboolean PM_INLINE PM_IsRocketTrooper(void)
 {
 	/*
 	if (pm->ps->clientNum < MAX_CLIENTS &&
