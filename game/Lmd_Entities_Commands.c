@@ -4,6 +4,7 @@
 #include "Lmd_KeyPairs.h"
 #include "Lmd_Commands_Data.h"
 #include "Lmd_Commands_Auths.h"
+#include "Lmd_Commands_Core.h"
 #include "Lmd_PlayerActions.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_Confirm.h"
@@ -411,11 +412,20 @@ void Cmd_Nudge_f(gentity_t *ent, int iArg){
 
 void Lmd_ModifyMaxsMinsSelect(gentity_t *ent, qboolean push)
 {
+	cmdEntry_t *command = Commands_GetEntry("SelectEnt");
+	if (!command || !Commands_PlayerCanUseCommand(ent, command) || !Auths_PlayerHasCommand(ent, command)) {
+		ent->client->pers.Lmd.selectedEntity = 0;
+		return;
+	}
 	gentity_t *tEnt = GetEnt(ent->client->pers.Lmd.selectedEntity);
-	if (!tEnt || !tEnt->inuse)
+	if (!tEnt || !tEnt->inuse || !tEnt->Lmd.spawnData || tEnt->client)
 	{
 		ent->client->pers.Lmd.selectedEntity = 0;
 		Disp(ent, "^1SelectedEntity not found anymore. Selection cleared.");
+		return;
+	}
+	if (tEnt->model && tEnt->model[0] == '*') {
+		Disp(ent, "^3Brush models cannot be resized with SelectEnt.");
 		return;
 	}
 
@@ -505,8 +515,7 @@ void Lmd_ModifyMaxsMinsSelect(gentity_t *ent, qboolean push)
 	}
 	else{
 		tEnt->Lmd.displayBounds = qtrue;
-		tEnt->think = Lmd_Bounds_Think;
-		tEnt->nextthink = level.time;
+		Lmd_Display_Bounds(tEnt, 1000);
 		Disp(ent, "^3Mins (^2%s^3). Maxs (^2%s^3).", minsStr, maxsStr);
 		removeSpawnstring(backupSpawn);
 	}
@@ -712,9 +721,15 @@ void Cmd_Select_f(gentity_t *ent, int iArg)
 	}
 	
 	trap_Argv(1, arg, sizeof(arg));
+	for (int digit = 0; arg[digit]; digit++) {
+		if (arg[digit] < '0' || arg[digit] > '9') {
+			Disp(ent, "^3Invalid entity number.");
+			return;
+		}
+	}
 	int i = atoi(arg);
 	gentity_t* target = GetEnt(i);
-	if (!target || !target->inuse)
+	if (!target || !target->inuse || !target->Lmd.spawnData || target->client)
 	{
 		Disp(ent, "^3Invalid entity.");
 		return;

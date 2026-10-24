@@ -37,6 +37,11 @@ typedef struct propData_s{
 	propertyKey_t *keys;
 }propData_t;
 
+qboolean Accounts_Property_HasKeys(Account_t *acc) {
+	propData_t *data = PROPDATA(acc);
+	return data && data->count > 0;
+}
+
 qboolean Accounts_Property_Parse(char *key, char *value, void *target, void *args) {
 
 	propData_t *propData = (propData_t *)target;

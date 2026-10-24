@@ -2290,7 +2290,14 @@ void ClientThink_real( gentity_t *ent ) {
 		client->Lmd.undyingTime = 0;
 	}
 
-	if (client->Lmd.freezeTime > 0 && client->Lmd.freezeTime < level.time){
+	// Keep the engine-facing exemption in sync with permanent and temporary auths,
+	// including after respawns and changes made by another administrator.
+	if (Auths_PlayerHasAuthFlag(ent, AUTH_NO_FLOODPROTECTION))
+		client->ps.userInt3 |= (1 << 1);
+	else
+		client->ps.userInt3 &= ~(1 << 1);
+
+	if (client->Lmd.freezeTime > 0 && client->Lmd.freezeTime <= level.time){
 		ent->client->Lmd.flags &= ~SNF_FREEZE;
 		client->Lmd.freezeTime = 0;
 	}

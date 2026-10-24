@@ -276,7 +276,7 @@ static qboolean HiRuns_Load_Callback(char *key, char *value, void *state) {
 		return qfalse;
 	}
 
-	int matched = sscanf(value, "\"%1024[^\"]\" %d \"%1024[^\"]\"", runName, &durationMs, players);
+	int matched = sscanf(value, "\"%1023[^\"]\" %d \"%1023[^\"]\"", runName, &durationMs, players);
 	if (matched < 2) {
 		return qfalse;
 	}

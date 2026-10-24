@@ -52,6 +52,7 @@ unsigned int Accounts_Count();
 Account_t* Accounts_Get(unsigned int i);
 
 void Accounts_Delete(Account_t *acc);
+qboolean Accounts_SaveChecked(Account_t *acc);
 
 int Accounts_GetId(Account_t *acc);
 #define PlayerAcc_GetId(ent) Accounts_GetId(ent->client->pers.Lmd.account)

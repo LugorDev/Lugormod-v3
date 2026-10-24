@@ -320,7 +320,7 @@ target2   - fire if they do not meet requirements
 ```
 
 ## lmd_playereffect ** (L)
-When triggered, this entity will use its target when enabled, and use its target2 when disabled.
+Applies the selected effect to the player who triggers it.
 
 ### Keys:
 

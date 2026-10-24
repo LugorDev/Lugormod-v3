@@ -209,6 +209,7 @@ void Cmd_Freeze_f(gentity_t *ent, int iArg){
 		Disp(ent, "^3You cannot freeze or unfreeze this player, they are in a camera or turret.");
 		return;
 	}
+	targ->client->Lmd.freezeTime = 0;
 	if(targ->client->Lmd.flags & SNF_FREEZE){
 		targ->client->Lmd.flags &= ~SNF_FREEZE;
 		Disp(ent, "^3Player ^2unfrozen.");
@@ -291,7 +292,7 @@ void Cmd_Teleport_f (gentity_t *ent, int iArg){
 		Disp(ent, "^3Target and destination players are the same.");
 		return;
 	}
-	if (tEnt->client->pers.Lmd.refuseTele)
+	if (tEnt->client->pers.Lmd.refuseTele || fEnt->client->pers.Lmd.refuseTele)
 	{
 		Disp(ent, "^3Target player has refused teleportation at the moment.");
 		return;

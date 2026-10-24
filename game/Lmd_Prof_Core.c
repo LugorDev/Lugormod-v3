@@ -211,6 +211,9 @@ void Lmd_Prof_AccountLoaded(AccountPtr_t accPtr, void *target){
 	//Remove the unused data.
 	profData_t *profData = (profData_t *)target;
 	void **alloc = (void **)profData->data;
+	if (profData->profession < 0 || profData->profession >= NUM_PROFESSIONS ||
+		!Professions[profData->profession])
+		profData->profession = PROF_NONE;
 	void *keep = alloc[profData->profession];
 	int i;
 	for(i = 0; i < NUM_PROFESSIONS; i++) {
@@ -234,8 +237,11 @@ void Lmd_Prof_AccountLoaded(AccountPtr_t accPtr, void *target){
 
 void Lmd_Prof_Free(void *target) {
 	profData_t *profData = (profData_t *)target;
-	if(profData->data)
+	if(profData->data) {
+		profession_t *prof = Professions[profData->profession];
+		Lmd_Data_FreeFields(profData->data, prof->data.fields, prof->data.count);
 		G_Free(profData->data);
+	}
 }
 
 accDataModule_t Accounts_Profession = {

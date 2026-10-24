@@ -609,7 +609,7 @@ char* Accounts_Custom_GetValue(Account_t* acc, char* key);
 void Send_Target_Print(gentity_t* ent, int targ)
 {
     char buf[MAX_STRING_CHARS];
-    strncpy(buf, ent->message, MAX_STRING_CHARS);
+    Q_strncpyz(buf, ent->message, sizeof(buf));
 
     gentity_t* activator = ent->activator;
     if (activator && activator->m_pVehicle && activator->m_pVehicle->m_pPilot)
@@ -618,7 +618,7 @@ void Send_Target_Print(gentity_t* ent, int targ)
     }
 
     char* processedMsg = lmd_processMessagePlaceholders(activator, buf, ent->target2);
-    strncpy(buf, processedMsg, MAX_STRING_CHARS);
+    Q_strncpyz(buf, processedMsg, sizeof(buf));
 
     if (buf[0] == '@' && buf[1] != '@')
     {
@@ -824,21 +824,21 @@ void Use_Target_Fp (gentity_t *ent, gentity_t *other, gentity_t *activator)
 	if (PlayerUseableCheck(ent, activator) == qfalse)
 		return;
 
-    if (!PlayerUseableCheck(ent, activator))
-        return;
-
 	activator->client->Lmd.customForceRegenSpeedMultiplier = ent->modelScale[0];
 
 	if (ent->Lmd.customIndex == 1)
 	{
 		activator->client->Lmd.targetFpUsed = qfalse;
+		activator->client->Lmd.customForceRegenSpeedMultiplier = 0;
 		WP_InitForcePowers(activator);
 		return;
 	}
 
 	activator->client->Lmd.targetFpUsed = qtrue;
 	
-	char *token = strtok(ent->target2, ".");
+	char powers[MAX_STRING_CHARS];
+	Q_strncpyz(powers, ent->target2 ? ent->target2 : "", sizeof(powers));
+	char *token = strtok(powers, ".");
 	while (token)
 	{
 		char powerName[32];

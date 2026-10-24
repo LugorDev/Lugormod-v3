@@ -1279,9 +1279,6 @@ qboolean NPC_HeardEnemy( gentity_t *enemy )
 	if ( level.time - NPCInfo->enemyLastHeardTime < 500 )
 		return qfalse;
 
-	NPCInfo->enemyLastHeardTime = level.time;
-	VectorCopy(enemy->r.currentOrigin, NPCInfo->enemyLastHeardLocation);
-
 	return qtrue;
 }
 
@@ -1341,7 +1338,7 @@ int NPC_FindNearestEnemy( gentity_t *ent )
 
 		trap_Trace( &tr, from, NULL, NULL, to, ent->s.number, MASK_SHOT );
 
-		if ( tr.entityNum == e->s.number )
+		if ( tr.fraction == 1.0f || tr.entityNum == e->s.number )
 		{
 			if ( dist < bestClearDist )
 			{

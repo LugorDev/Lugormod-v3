@@ -63,9 +63,9 @@ authFlag_t AuthFlags[] = {
 	{"UnIgnoreable", -1}, //AUTH_UNIGNOREABLE,
 	{"Cheats", 1}, //AUTH_CHEATS,
 	{"GodProf", 1}, //AUTH_GODPROF,
-	{"UberForce", 1}, //AUTH_UBERFORCE,
 	{"BotCommands", 1}, //AUTH_BOTCOMMANDS,
 	{"", 2}, //AUTH_BETACMDS,
+	{"NoFloodProtection", 0}, //AUTH_NO_FLOODPROTECTION (explicit opt-in)
 };
 
 authFile_t *Auths_GetFile(char *name){
@@ -1020,7 +1020,6 @@ void Cmd_GrantAdmin_f(gentity_t *ent, int iArg){
 			}
 			Lmd_Accounts_Modify(acc);
 
-			ent->client->ps.userInt3 &= ~1 << 1;
 		}
 		else if(Auths_RemoveAccAuthfile(acc, file)) {
 			Disp(ent, va(CT_S"Authfile "CT_SV"%s"CT_S" removed from "CT_SV"%s", file->name, username));
@@ -1029,8 +1028,6 @@ void Cmd_GrantAdmin_f(gentity_t *ent, int iArg){
 				Accounts_Prof_SetLevel(acc, 1);
 			}
 			Lmd_Accounts_Modify(acc);
-			if (!Auths_AccHasAuthFlag(acc, AUTH_NO_FLOODPROTECTION))
-				ent->client->ps.userInt3 &= ~1 << 1;
 		}
 		else
 			Disp(ent, va(CT_NAV"%s"CT_NA" does not have authfile "CT_NAV"%s", username, file->name));
@@ -1046,8 +1043,6 @@ void Cmd_GrantAdmin_f(gentity_t *ent, int iArg){
 		}
 		Auths_AddAccAuthfile(acc, file);
 		Disp(ent, va(CT_V"%s"CT_S" now has access to authfile \'"CT_SV"%s"CT_S"\'.", username, file->name));
-		if (Auths_AccHasAuthFlag(acc, AUTH_NO_FLOODPROTECTION))
-			ent->client->ps.userInt3 |= 1 << 1;
 	}
 }
 

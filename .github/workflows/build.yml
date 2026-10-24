@@ -67,11 +67,14 @@ jobs:
           sudo apt install -y gcc-multilib g++-multilib libc6-dev-i386
 
       - name: Setup CMake
-        run: cmake -B ${{ env.BUILD_DIR }} ${{ matrix.platform && format('-A {0}', matrix.platform) }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.arch_flags && format('-DCMAKE_C_FLAGS="{0}" -DCMAKE_CXX_FLAGS="{0}"', matrix.arch_flags) }}
+        run: cmake -B ${{ env.BUILD_DIR }} ${{ matrix.platform && format('-A {0}', matrix.platform) }} -DLMD_REGRESSION_TESTS=ON -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.arch_flags && format('-DCMAKE_C_FLAGS="{0}" -DCMAKE_CXX_FLAGS="{0}"', matrix.arch_flags) }}
         shell: bash
 
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ matrix.build_type }} -j
+
+      - name: Test
+        run: ctest --test-dir ${{ env.BUILD_DIR }} -C ${{ matrix.build_type }} --output-on-failure
 
       - name: Upload PR artifacts
         if: github.event_name == 'pull_request'

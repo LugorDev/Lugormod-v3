@@ -3192,8 +3192,8 @@ void G_ApplyKnockback( gentity_t *targ, vec3_t newDir, float knockback )
 		//return;
 	}
 
-	if (targ && targ->NPC && targ->NPC->scriptFlags & SCF_NO_HURT)
-		mass = 999999;
+	if (targ && targ->NPC && (targ->NPC->scriptFlags & SCF_NO_HURT))
+		return;
 	
 	if ( targ->physicsBounce > 0 )	//overide the mass
 		mass = targ->physicsBounce;

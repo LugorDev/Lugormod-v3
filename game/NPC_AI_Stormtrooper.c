@@ -2543,18 +2543,20 @@ void NPC_BSST_Attack( void )
 		}
 		else
 		{//can we shoot our target?
-			if ( qfalse ) //(NPC->client->ps.weapon == WP_ROCKET_LAUNCHER || (NPC->client->ps.weapon == WP_FLECHETTE && (NPCInfo->scriptFlags&SCF_ALT_FIRE))) && enemyDist < MIN_ROCKET_DIST_SQUARED )//128*128
+			if ((NPC->client->ps.weapon == WP_ROCKET_LAUNCHER ||
+				(NPC->client->ps.weapon == WP_FLECHETTE && (NPCInfo->scriptFlags & SCF_ALT_FIRE))) &&
+				enemyDist < MIN_ROCKET_DIST_SQUARED)
 			{
 				enemyCS = qfalse;
 				if (NPCInfo->scriptFlags & SCF_DONT_FLEE)
 				{
-					NPC_Surrender();
+					// Scripted stationary NPCs must not fire into their own blast radius.
 					NPC_UpdateAngles( qtrue, qtrue );
 					return;
 				}
 				else
 				{
-					if ( NPCInfo->behaviorState != BS_FLEE)
+					if ( NPCInfo->tempBehavior != BS_FLEE)
 					{
 						NPC_StartFlee( NPC->enemy, NPC->enemy->r.currentOrigin, AEL_DANGER_GREAT, 1500, 4500 );
 					}

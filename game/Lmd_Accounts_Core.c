@@ -254,6 +254,7 @@ DataWriteResult_t Accounts_Write_Modules(void *target, char key[], int keySize, 
 			if (result == DWR_COMPLETE || result == DWR_NODATA) {
 				// We are done with this field
 				state->dataFieldIndex++;
+				state->dataFieldState = NULL;
 			}
 
 			if (result == DWR_NODATA) {
@@ -313,6 +314,7 @@ DataWriteResult_t Characters_Write_Modules(void *target, char key[], int keySize
 			DataWriteResult_t result = field->write(dataPtr, key, keySize, value, valueSize, &state->dataFieldState, field->writeArgs);
 			if (result == DWR_COMPLETE || result == DWR_NODATA) {
 				state->dataFieldIndex++;
+				state->dataFieldState = NULL;
 			}
 			if (result == DWR_NODATA) {
 				goto nextField;
@@ -448,7 +450,7 @@ Character_t *Account_GetActiveCharacter(Account_t *acc) {
 }
 
 void Account_SetActiveCharacter(Account_t *acc, Character_t *ch) {
-	if (!acc) return;
+	if (!acc || (ch && ch->account != acc)) return;
 	acc->activeCharacter = ch;
 }
 
@@ -485,6 +487,8 @@ Character_t *Account_NewCharacter(Account_t *acc, char *name) {
 	Character_t *ch = allocCharacter(acc);
 	ch->name = G_NewString2(name);
 	acc->characters[acc->numCharacters++] = ch;
+	Character_t *previous = acc->activeCharacter;
+	acc->activeCharacter = ch;
 	int i;
 	for (i = 0; i < CharacterDataTypes.count; i++) {
 		accDataModule_t *category = CharacterDataTypes.categories[i];
@@ -492,6 +496,7 @@ Character_t *Account_NewCharacter(Account_t *acc, char *name) {
 			continue;
 		category->accLoadCompleted(acc, ch->data.data[i]);
 	}
+	acc->activeCharacter = previous;
 	Lmd_Accounts_Modify(acc);
 	return ch;
 }
@@ -521,7 +526,7 @@ qboolean Account_DeleteCharacter(Account_t *acc, Character_t *ch) {
 }
 
 qboolean Account_MoveCharacter(Account_t *src, Character_t *ch, Account_t *dst) {
-	if (!src || !dst || !ch)
+	if (!src || !dst || !ch || src == dst)
 		return qfalse;
 	if (dst->numCharacters >= MAX_CHARS_PER_ACCOUNT)
 		return qfalse;
@@ -742,9 +747,13 @@ void Accounts_Delete(Account_t *acc) {
 	deleteAccount(acc);
 }
 
-void Accounts_Save(Account_t *acc)
+qboolean Accounts_SaveChecked(Account_t *acc)
 {
 	fileHandle_t f = Lmd_Data_OpenDataFile("accounts", va("%s.uac", acc->username), FS_WRITE);
+	if (!f) {
+		Com_Printf("Unable to save account %s.\n", acc->username);
+		return qfalse;
+	}
 	Lmd_Data_WriteToFile_LinesDelimited(f, AccountFields, AccountFields_Count, (void *)acc);
 
 	int i;
@@ -762,6 +771,11 @@ void Accounts_Save(Account_t *acc)
 	trap_FS_FCloseFile(f);
 
 	acc->modifiedTime = 0;
+	return qtrue;
+}
+
+void Accounts_Save(Account_t *acc) {
+	Accounts_SaveChecked(acc);
 }
 
 void updatePlayer(gentity_t *ent);
@@ -829,6 +843,7 @@ qboolean parseAccount(char *name, char *buf){
 	char key[MAX_STRING_CHARS], value[MAX_STRING_CHARS];
 	Character_t *currentChar = NULL;
 	qboolean sawCharacterSection = qfalse;
+	qboolean inCharacterSection = qfalse;
 
 	while (str && *str) {
 		p = COM_ParseExt((const char **)&str, qtrue);
@@ -837,6 +852,7 @@ qboolean parseAccount(char *name, char *buf){
 
 		// Section markers — bare tokens with no `key:` colon.
 		if (Q_stricmp(p, "[character]") == 0) {
+			inCharacterSection = qtrue;
 			sawCharacterSection = qtrue;
 			if (acc->numCharacters < MAX_CHARS_PER_ACCOUNT) {
 				currentChar = allocCharacter(acc);
@@ -848,6 +864,7 @@ qboolean parseAccount(char *name, char *buf){
 			continue;
 		}
 		if (Q_stricmp(p, "[/character]") == 0) {
+			inCharacterSection = qfalse;
 			currentChar = NULL;
 			continue;
 		}
@@ -866,6 +883,8 @@ qboolean parseAccount(char *name, char *buf){
 			valuePtr = NULL;
 		}
 
+		if (inCharacterSection && !currentChar)
+			continue; // Never interpret overflow character fields as account fields.
 		if (currentChar) {
 			Lmd_Data_Parse_KeyValuePair(key, valuePtr, currentChar, CharacterFields, CharacterFields_Count);
 		}
@@ -891,11 +910,27 @@ qboolean parseAccount(char *name, char *buf){
 		acc->modifiedTime = level.time > 0 ? level.time : 1;
 	}
 	else {
+		// Finalize module allocations before freeing the unused legacy character.
+		for (int i = 0; i < CharacterDataTypes.count; i++) {
+			accDataModule_t *module = CharacterDataTypes.categories[i];
+			if (module->accLoadCompleted)
+				module->accLoadCompleted(acc, legacyCh->data.data[i]);
+		}
 		freeCharacter(legacyCh);
 		if (acc->numCharacters > 0)
 			acc->activeCharacter = acc->characters[0];
 	}
 
+	Character_t *previous = acc->activeCharacter;
+	for (int c = 0; c < acc->numCharacters; c++) {
+		acc->activeCharacter = acc->characters[c];
+		for (int i = 0; i < CharacterDataTypes.count; i++) {
+			accDataModule_t *module = CharacterDataTypes.categories[i];
+			if (module->accLoadCompleted)
+				module->accLoadCompleted(acc, acc->characters[c]->data.data[i]);
+		}
+	}
+	acc->activeCharacter = previous;
 	if(validateNewAccount(acc)) {
 		addAccount(acc);
 	}
@@ -915,17 +950,6 @@ unsigned int Accounts_Load(){
 			continue;
 		for(a = 0; a < AccList.count; a++) {
 			module->accLoadCompleted(AccList.accounts[a], AccList.accounts[a]->data.data[i]);
-		}
-	}
-	for (i = 0; i < CharacterDataTypes.count; i++) {
-		accDataModule_t *module = CharacterDataTypes.categories[i];
-		if (module->accLoadCompleted == NULL)
-			continue;
-		for (a = 0; a < AccList.count; a++) {
-			Account_t *acc = AccList.accounts[a];
-			for (c = 0; c < acc->numCharacters; c++) {
-				module->accLoadCompleted(acc, acc->characters[c]->data.data[i]);
-			}
 		}
 	}
 
@@ -1178,16 +1202,22 @@ int Accounts_LoadTitles(void) {
 		Q_strncpyz(lmd_titleData.merc_titles[i], DEFAULT_TITLE, MAX_TITLE_LENGTH);
 	}
 
-	char *line = strtok(file, "\n");
-	while (line != NULL) {
+	char *nextLine = file;
+	char *line;
+	while ((line = nextLine) != NULL) {
+		nextLine = strchr(line, '\n');
+		if (nextLine) *nextLine++ = 0;
+		char *cr = strchr(line, '\r');
+		if (cr) *cr = 0;
+
 		if (line[0] == '#' || line[0] == '\0') {
-			line = strtok(NULL, "\n");
+
 			continue;
 		}
-		
+
 		char *type = strtok(line, ",");
 		if (!type) {
-			line = strtok(NULL, "\n");
+
 			continue;
 		}
 
@@ -1197,7 +1227,7 @@ int Accounts_LoadTitles(void) {
 		}
 
 		if (!titles[0] || !titles[4]) {
-			line = strtok(NULL, "\n");
+
 			continue; // invalid line
 		}
 
@@ -1207,7 +1237,7 @@ int Accounts_LoadTitles(void) {
 		else if (!Q_stricmp(type, "SITH")) dest = lmd_titleData.sith_titles;
 		else if (!Q_stricmp(type, "MERC")) dest = lmd_titleData.merc_titles;
 		else {
-			line = strtok(NULL, "\n");
+
 			continue;
 		}
 
@@ -1217,7 +1247,7 @@ int Accounts_LoadTitles(void) {
 			}
 		}
 
-		line = strtok(NULL, "\n");
+
 	}
 
 	G_Free(file);

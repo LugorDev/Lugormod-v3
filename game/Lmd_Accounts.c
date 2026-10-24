@@ -505,7 +505,7 @@ void Lmd_Accounts_Player_Logout(gentity_t *ent){
 
 	Lmd_Accounts_LogAction(ent, acc, "logged out");
 
-	ent->client->ps.userInt3 &= ~1 << 1;
+	ent->client->ps.userInt3 &= ~(1 << 1);
 
 	RenamePlayer(ent, "Padawan");
 
@@ -578,8 +578,7 @@ void Lmd_Accounts_Player_DeselectCharacter(gentity_t *ent) {
 		return;
 	Account_t *acc = ent->client->pers.Lmd.account;
 	Inventory_Player_Logout(ent);
-	if (acc)
-		Account_SetActiveCharacter(acc, NULL);
+	// Keep the last character available to offline administrative getters.
 	ent->client->pers.Lmd.character = NULL;
 }
 
@@ -1185,6 +1184,12 @@ void Cmd_CharList_f(gentity_t *ent, int iArg) {
 }
 
 void Cmd_CharSelect_f(gentity_t *ent, int iArg) {
+	if (duelInProgress(&ent->client->ps) || (ent->client->Lmd.flags & SNF_FREEZE) ||
+		ent->client->pers.Lmd.jailTime > level.time || ent->client->ps.m_iVehicleNum ||
+		ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		Disp(ent, "^3Switch to spectator before changing characters. You cannot switch while jailed, frozen, dueling or in a vehicle.");
+		return;
+	}
 	Account_t *acc = ent->client->pers.Lmd.account;
 	if (!acc) {
 		Disp(ent, "^3You must be logged in to use this.");
@@ -1227,6 +1232,7 @@ void Cmd_CharSelect_f(gentity_t *ent, int iArg) {
 		return;
 	}
 	if (ent->client->pers.Lmd.character) {
+		recallDroppedCredits(ent);
 		updatePlayer(ent);
 		Lmd_Accounts_Player_DeselectCharacter(ent);
 	}
@@ -1295,8 +1301,8 @@ void Cmd_CharDelete_f(gentity_t *ent, int iArg) {
 	}
 	qboolean wasActive = (ent->client->pers.Lmd.character == ch);
 	if (wasActive) {
-		Lmd_Accounts_Player_DeselectCharacter(ent);
-		RenamePlayer(ent, "Padawan");
+		Disp(ent, "^3Select a different character before deleting this one.");
+		return;
 	}
 	if (Account_DeleteCharacter(acc, ch)) {
 		Accounts_Save(acc);

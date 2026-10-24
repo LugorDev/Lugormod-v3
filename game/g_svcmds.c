@@ -101,6 +101,7 @@ void Svcmd_DeleteNick_f (void){
 }
 
 gentity_t *Accounts_GetPlayerByAcc(Account_t *acc);
+qboolean Accounts_Property_HasKeys(Account_t *acc);
 void Svcmd_MergeAccounts_f(void) {
 	if (trap_Argc() < 3) {
 		Com_Printf("Usage:\nmergeaccounts <srcUsername> <dstUsername>\n"
@@ -128,8 +129,8 @@ void Svcmd_MergeAccounts_f(void) {
 			srcCount + dstCount, MAX_CHARS_PER_ACCOUNT);
 		return;
 	}
-	if (Auths_AccHasAdmin(src)) {
-		Com_Printf("Source account has admin authfiles. Remove them with /removeadmin first.\n");
+	if (Auths_AccHasAdmin(src) || Accounts_Property_HasKeys(src)) {
+		Com_Printf("Source account has authfiles or property. Transfer these manually first.\n");
 		return;
 	}
 	// Move every character.
@@ -139,6 +140,11 @@ void Svcmd_MergeAccounts_f(void) {
 			Com_Printf("Failed to move character; aborting (state may be partial).\n");
 			return;
 		}
+	}
+	// Persist the destination before removing the only durable source copy.
+	if (!Accounts_SaveChecked(dst)) {
+		Com_Printf("Destination save failed. Source account retained; fix storage before restarting.\n");
+		return;
 	}
 	Com_Printf("Merged %d character(s) from %s into %s. Deleting %s.\n",
 		srcCount, srcArg, dstArg, srcArg);
