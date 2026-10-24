@@ -2,6 +2,7 @@
 #include "g_local.h"
 #include "Lmd_Crosshair.h"
 #include "Lmd_EntityCore.h"
+#include "Lmd_HiRuns.h"
 #include "Lmd_SetSaber.h"
 
 //#define LMD_MEMORY_DEBUG
@@ -78,6 +79,8 @@ void Lmd_Startup(void) {
 	LoadLocationData();
 	G_Printf("^5Loading bans...\n");
 	Bans_Load();
+	G_Printf("^5Loading hiruns...\n");
+	HiRuns_Load();
 }
 
 void jailPlayer(gentity_t *targ, int time);
@@ -238,6 +241,7 @@ void Lmd_Shutdown(void){
 	Accounts_SaveAll(qtrue);
 	Factions_Save(qtrue);
 
+	HiRuns_Save();
 	Auths_Shutdown();
 }
 

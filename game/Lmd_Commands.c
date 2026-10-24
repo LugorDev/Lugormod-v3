@@ -12,6 +12,7 @@
 #include "Lmd_PlayerActions.h"
 #include "Lmd_Arrays.h"
 #include "Lmd_Console.h"
+#include "Lmd_HiRuns.h"
 #include "Lmd_Time.h"
 
 gentity_t *G_GetJediMaster (void);
@@ -1055,6 +1056,24 @@ void Cmd_DropStash_f(gentity_t *ent, int iArg){
 	}
 }
 
+void Cmd_HiRuns_f(gentity_t *ent, int iArg){
+	char arg[MAX_STRING_CHARS];
+	int argc = trap_Argc();
+
+	if(argc < 2){
+		HiRuns_ListRuns(ent);
+		return;
+	}
+
+	trap_Argv(1, arg, sizeof(arg));
+	if(Q_stricmp(arg, "list") == 0){
+		HiRuns_ListRuns(ent);
+		return;
+	}
+
+	HiRuns_Show(ent, arg);
+}
+
 void Cmd_Examine_f (gentity_t *ent, int iArg)
 {
 	gentity_t *targ = AimAnyTarget(ent, 64);
@@ -1163,6 +1182,7 @@ cmdEntry_t playerCommandEntries[] = {
 	{"topduels","Display the top ten players with the highest duel win/loss ratio.", HiRatio, RATIO_DUEL_WIN_LOSS, qfalse, 0, 1, 0, 0},
 	{"hihits","Display the top ten players with the highest accuracy (hit/miss ratio).", HiRatio, RATIO_HIT_MISS, qfalse, 0, 1, 0, 0},
 	{"tophits","Display the top ten players with the highest accuracy (hit/miss ratio).", HiRatio, RATIO_HIT_MISS, qfalse, 0, 1, 0, 0},
+	{"hiruns","Display top runs for a named timer. Use \"/hiruns list\" to see available names.", Cmd_HiRuns_f, 0, qfalse, 0, 1, 0, 0},
 	{"ignore", "Ignore messages from the player.  Set player to -1 to ignore/unignore all.", Cmd_IgnoreClient_f, 0, qfalse, 0, 0, 0, 0},
 	{"interact", "Use this to interact with certain terminals.", Cmd_Interact_f, 0, qfalse, 0, 0, 0, 0},
 	{"ionlyduel","You will be (almost) invulnerable until you engage a duel, but you can't use offensive force powers or hurt anyone.", Cmd_Ionlyduel_f, 0, qfalse, 0, 64, ~(1 << GT_FFA), 0},

@@ -11,6 +11,7 @@
 #include "Lmd_Professions.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_Inventory.h"
+#include "Lmd_HiRuns.h"
 #include "Lmd_Time.h"
 #include "Lmd_Interact.h"
 #include "Lmd_Professions_Public.h"
@@ -278,8 +279,6 @@ qboolean PlayerUseableCheck(gentity_t* self, gentity_t* activator)
     if ((self->Lmd.UseReq.profession < 0 && activatorProf != PROF_NONE) || (self->Lmd.UseReq.profession > 0 &&
         (activatorProf <= PROF_BOT || !(self->Lmd.UseReq.profession & (1 << (activatorProf - 3))))))
         return qfalse;
-
-    
    
     if (self->Lmd.UseReq.sideAcc > 0)
     {
@@ -290,7 +289,7 @@ qboolean PlayerUseableCheck(gentity_t* self, gentity_t* activator)
         if (self->Lmd.UseReq.sideAcc != sideAcc)
             return qfalse;
     }
-
+    
     if (self->Lmd.UseReq.level > 0 && (activatorLevel < self->Lmd.UseReq.level ||
         (self->Lmd.UseReq.levelMax >= self->Lmd.UseReq.level && activatorLevel > self->Lmd.UseReq.levelMax)))
         return qfalse;
@@ -636,6 +635,73 @@ void lmd_toggle(gentity_t* ent)
     {
         EntitySpawnError("lmd_toggle must have a count value greater than or equal to 2.");
         G_FreeEntity(ent);
+    }
+}
+
+void lmd_timer_use(gentity_t* self, gentity_t* other, gentity_t* activator)
+{
+    if (!activator || !activator->client)
+        return;
+
+    if (!self->target || !self->target[0])
+    {
+        Disp(activator, "^3lmd_timer has no target run name.");
+        return;
+    }
+
+    if (self->spawnflags & 2)
+    {
+        HiRuns_ShowTerminal(activator, self->target);
+        return;
+    }
+
+    if (self->spawnflags & 1)
+    {
+        HiRuns_TimerStop(activator, self->target);
+        return;
+    }
+
+    HiRuns_TimerStart(activator, self->target, self->count > 0 ? self->count : 1);
+}
+
+const entityInfoData_t lmd_timer_spawnflags[] = {
+    {"1", "Stop the timer and record the run when all participants finish."},
+    {"2", "Show the run list in a terminal menu for the activator."},
+    {NULL, NULL}
+};
+
+const entityInfoData_t lmd_timer_keys[] = {
+    {"Count", "Number of players required to start the run (default 1)."},
+    {"Target", "Name of the run to record."},
+    {NULL, NULL}
+};
+
+entityInfo_t lmd_timer_info = {
+    "Start/stop a named run timer and record top run times.",
+    lmd_timer_spawnflags,
+    lmd_timer_keys
+};
+
+void lmd_timer(gentity_t* ent)
+{
+    ent->use = lmd_timer_use;
+
+    if (ent->Lmd.spawnData && Q_stricmp(ent->classname, "lmd_timer") != 0)
+    {
+        ent->classname = "lmd_timer";
+        Lmd_Entities_setSpawnstringKey(ent->Lmd.spawnData, "classname", "lmd_timer");
+    }
+
+    if (!ent->target || !ent->target[0])
+    {
+        EntitySpawnError("lmd_timer must have a target value for the run name.");
+        G_FreeEntity(ent);
+        return;
+    }
+
+    if (ent->count < 1)
+    {
+        ent->count = 1;
     }
 }
 
@@ -1416,6 +1482,7 @@ const entityInfoData_t lmd_door_keys[] = {
     {"OpenTarget", "Fired after reaching the \'open\' position."},
     {"Target2", "Fired when it starts moving from the open position to the closed position."},
     {"CloseTarget", "Fire after reaching the \'closed\' position."},
+    {"WantPosition", "Desired resting position for target_doorstate checks. Accepts 'open' or 'close'."},
     {
         "TargetName",
         "Trigger when an entity uses this.  If not specified, the door will open when someone gets close to it."
@@ -1459,6 +1526,11 @@ void lmd_door(gentity_t* ent)
     {
         ent->classname = "lmd_door";
         Lmd_Entities_setSpawnstringKey(ent->Lmd.spawnData, "classname", "lmd_door");
+    }
+    G_SpawnString("wantPosition", "", &ent->GenericStrings[15]);
+    if (ent->GenericStrings[15] && !ent->GenericStrings[15][0])
+    {
+        ent->GenericStrings[15] = NULL;
     }
     G_SpawnInt("vehopen", "0", &ent->genericValue14);
 
@@ -1792,7 +1864,7 @@ void lmd_menu_show(gentity_t* player, gentity_t* menu)
         Q_strcat(msg, sizeof(msg), va("  %sCancel\n", menu->Lmd.color2));
     }
     
-    strcpy_s(msg, sizeof(msg), lmd_processMessagePlaceholders(player, msg, NULL));
+    Q_strncpyz(msg, lmd_processMessagePlaceholders(player, msg, NULL), sizeof(msg));
 
 
     trap_SendServerCommand(player->s.number, va("cp \"%s\"", msg));
@@ -1803,7 +1875,7 @@ void lmd_menu_exit(gentity_t* player)
 {
     if (!player || !player->client)
         return;
-    
+
     player->client->Lmd.lmdMenu.lastUsedEntityNum = player->client->Lmd.lmdMenu.entityNum;
     player->client->Lmd.lmdMenu.lastUsedTime = level.time;
     player->client->Lmd.lmdMenu.entityNum = 0;
@@ -2072,7 +2144,7 @@ void lmd_terminal_use(gentity_t* self, gentity_t* other, gentity_t* activator)
     int i;
     if (self->message)
     {
-        strcpy_s(msg, sizeof(msg), lmd_processMessagePlaceholders(activator, self->message, NULL));
+        Q_strncpyz(msg, lmd_processMessagePlaceholders(activator, self->message, NULL), sizeof(msg));
         Q_strcat(msg, sizeof(msg), va("\n^5==============================\n", msg));
     }
 
@@ -2393,7 +2465,7 @@ void lmd_rentterminal_examine(gentity_t* self, gentity_t* activator)
     if (self->message)
     {
         char msgt[MAX_STRING_CHARS] = "";
-        strcpy_s(msgt, sizeof(msgt), lmd_processMessagePlaceholders(activator, self->message, NULL));
+        Q_strncpyz(msgt, lmd_processMessagePlaceholders(activator, self->message, NULL), sizeof(msgt));
         Disp(activator, msgt); //send this as a seperate disp, in case the msg makes us hit MAX_STRING_CHARS
     }
 
@@ -2490,7 +2562,7 @@ void lmd_rentterminal_use(gentity_t* self, gentity_t* other, gentity_t* activato
     int sec = 0, min = 0;
     if (self->message)
     {
-        strcpy_s(msg, sizeof(msg), lmd_processMessagePlaceholders(activator, self->message, NULL));
+        Q_strncpyz(msg, lmd_processMessagePlaceholders(activator, self->message, NULL), sizeof(msg));
         Q_strcat(msg, sizeof(msg), va("\n", msg));
     }
 
@@ -2536,7 +2608,7 @@ void lmd_rentterminal_think(gentity_t* ent)
             char msg[MAX_STRING_CHARS] = "";
             if (ent->message)
             {
-                strcpy_s(msg, sizeof(msg), lmd_processMessagePlaceholders(ent->activator, ent->message, NULL));
+                Q_strncpyz(msg, lmd_processMessagePlaceholders(ent->activator, ent->message, NULL), sizeof(msg));
                 Q_strncpyz(msg, va("%s\n", msg), sizeof(msg));
             }
             Q_strcat(msg, sizeof(msg), va("^3You have ^2%i^3 seconds left.", timeLeft));
@@ -2550,7 +2622,7 @@ void lmd_rentterminal_think(gentity_t* ent)
                 char msg[MAX_STRING_CHARS] = "";
                 if (ent->message)
                 {
-                    strcpy_s(msg, sizeof(msg), lmd_processMessagePlaceholders(ent->activator, ent->message, NULL));
+                    Q_strncpyz(msg, lmd_processMessagePlaceholders(ent->activator, ent->message, NULL), sizeof(msg));
                     Q_strncpyz(msg, va("%s\n", msg), sizeof(msg));
                 }
                 Q_strcat(msg, sizeof(msg), "^1Your rent has expired.");
@@ -2716,7 +2788,7 @@ void lmd_scale(gentity_t* ent)
 const entityInfoData_t lmd_playereffect_keys[] = {
     {
         "effect",
-        "1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying."
+        "1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying., 10: Freeze"
     },
     {"wait", "Time to play the effect for.  Default 30."},
     {NULL, NULL}
@@ -2773,6 +2845,18 @@ void lmd_playereffect_use(gentity_t* ent, gentity_t* other, gentity_t* activator
         activator->flags |= FL_UNDYING;
         activator->client->Lmd.undyingTime = level.time + ent->wait;
         break;
+    case 10:
+        {
+            if ((activator->client->Lmd.flags & SNF_FREEZE) && !activator->client->Lmd.freezeTime)
+                break; // An administrator owns this freeze.
+            for (int i = 0; i < 3; i++)
+            {
+                activator->client->ps.velocity[i] = 0;
+            }
+            activator->client->Lmd.flags |= SNF_FREEZE;
+            activator->client->Lmd.freezeTime = level.time + ent->wait;
+            break;
+        }
     }
 }
 
@@ -3286,6 +3370,57 @@ void lmd_playercheck(gentity_t* ent)
 {
     PlayerUsableGetKeys(ent);
     ent->use = lmd_playercheck_use;
+}
+
+static void lmd_entitycheck_use(gentity_t *self, gentity_t *other, gentity_t *activator)
+{
+    qboolean matches = PlayerUseableCheck(self, activator);
+    if (matches && self->GenericStrings[0] && self->GenericStrings[0][0]) {
+        gentity_t *checked = NULL;
+        qboolean found = qfalse;
+        while ((checked = G_Find(checked, FOFS(targetname), self->GenericStrings[0])) != NULL) {
+            qboolean on;
+            found = qtrue;
+            if (!Q_stricmp(checked->classname, "func_door") || !Q_stricmp(checked->classname, "lmd_door")) {
+                if (checked->moverState != MOVER_POS1 && checked->moverState != MOVER_POS2) {
+                    matches = qfalse;
+                    break;
+                }
+                on = checked->moverState == MOVER_POS2;
+            } else if (!Q_stricmp(checked->classname, "fx_runner")) {
+                on = !(checked->spawnflags & 2) && checked->nextthink > 0;
+            } else {
+                matches = qfalse;
+                break;
+            }
+            if (on != (self->genericValue1 != 0)) {
+                matches = qfalse;
+                break;
+            }
+        }
+        if (!found) matches = qfalse;
+    }
+    G_UseTargets2(self, activator, matches ? self->target : self->target2);
+}
+
+const entityInfoData_t lmd_entitycheck_keys[] = {
+    {"#UKEYS", NULL},
+    {"checkTarget", "Targetname of doors or fx_runner entities to check (all must match)."},
+    {"isOn", "Required state: 0 closed/off, 1 open/on. Moving doors do not match."},
+    {"target", "Fired when the player and entity checks pass."},
+    {"target2", "Fired when any check fails or a checked entity is missing."},
+    {NULL, NULL}
+};
+entityInfo_t lmd_entitycheck_info = {
+    "Checks player requirements and optionally the state of named doors or effects.",
+    NULL, lmd_entitycheck_keys
+};
+void lmd_entitycheck(gentity_t *ent)
+{
+    PlayerUsableGetKeys(ent);
+    G_SpawnString("checkTarget", "", &ent->GenericStrings[0]);
+    G_SpawnInt("isOn", "1", &ent->genericValue1);
+    ent->use = lmd_entitycheck_use;
 }
 
 void lmd_chance_use(gentity_t* self, gentity_t* other, gentity_t* activator)
@@ -5675,6 +5810,155 @@ void lmd_cskill_compare(gentity_t* self)
     }
 
     self->use = lmd_cskill_compare_use;
+}
+
+void lmd_equalcheck_use(gentity_t* self, gentity_t* other, gentity_t* activator)
+{
+    const char* keyName = self->GenericStrings[6];
+    if (!keyName || !keyName[0])
+    {
+        return;
+    }
+
+    char compareValue[MAX_STRING_CHARS];
+    qboolean haveCompareValue = qfalse;
+    qboolean mismatch = qfalse;
+    qboolean foundAny = qfalse;
+
+    if (self->GenericStrings[7] && self->GenericStrings[7][0])
+    {
+        Q_strncpyz(compareValue, self->GenericStrings[7], sizeof(compareValue));
+        haveCompareValue = qtrue;
+    }
+
+    for (int i = 0; i < 6 && !mismatch; i++)
+    {
+        const char* targetName = self->GenericStrings[i];
+        if (!targetName || !targetName[0])
+        {
+            continue;
+        }
+
+        gentity_t* ent = NULL;
+        qboolean foundForTarget = qfalse;
+
+        while ((ent = G_Find(ent, FOFS(targetname), targetName)) != NULL)
+        {
+            foundForTarget = qtrue;
+            foundAny = qtrue;
+
+            if (!ent->Lmd.spawnData)
+            {
+                mismatch = qtrue;
+                break;
+            }
+
+            char value[MAX_STRING_CHARS];
+            if (!Lmd_Entities_getSpawnstringKey(ent->Lmd.spawnData, (char*)keyName, value, sizeof(value)))
+            {
+                mismatch = qtrue;
+                break;
+            }
+
+            if (!haveCompareValue)
+            {
+                Q_strncpyz(compareValue, value, sizeof(compareValue));
+                haveCompareValue = qtrue;
+                continue;
+            }
+
+            if (Q_stricmp(compareValue, value) != 0)
+            {
+                mismatch = qtrue;
+                break;
+            }
+        }
+
+        if (mismatch)
+        {
+            break;
+        }
+
+        if (!foundForTarget)
+        {
+            mismatch = qtrue;
+        }
+    }
+
+    if (!haveCompareValue || !foundAny)
+    {
+        mismatch = qtrue;
+    }
+
+    if (!mismatch)
+    {
+        G_UseTargets2(self, activator, self->GenericStrings[8]);
+    }
+    else
+    {
+        G_UseTargets2(self, activator, self->GenericStrings[9]);
+    }
+}
+
+const entityInfoData_t lmd_equalcheck_keys[] = {
+    {"Target1", "First targetname to evaluate."},
+    {"Target2", "Second targetname to evaluate."},
+    {"Target3", "Third targetname to evaluate."},
+    {"Target4", "Fourth targetname to evaluate."},
+    {"Target5", "Fifth targetname to evaluate."},
+    {"Target6", "Sixth targetname to evaluate."},
+    {"Key", "Spawn key to compare across all referenced entities."},
+    {"Value", "Optional expected value; if omitted the first entity's value is used."},
+    {"EqualTarget", "Target to fire when all values match."},
+    {"UnequalTarget", "Target to fire when a mismatch is detected."},
+    {NULL, NULL},
+};
+
+entityInfo_t lmd_equalcheck_info = {
+    "Compares a spawn key across up to six targetnames, firing EqualTarget when all values match and UnequalTarget otherwise.",
+    NULL,
+    lmd_equalcheck_keys
+};
+
+void lmd_equalcheck(gentity_t* self)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        char keyName[16];
+        Com_sprintf(keyName, sizeof(keyName), "target%d", i + 1);
+        G_SpawnString(keyName, "", &self->GenericStrings[i]);
+        if (!self->GenericStrings[i] || !self->GenericStrings[i][0])
+        {
+            self->GenericStrings[i] = NULL;
+        }
+    }
+
+    G_SpawnString("key", "", &self->GenericStrings[6]);
+    if (!self->GenericStrings[6] || !self->GenericStrings[6][0])
+    {
+        G_FreeEntity(self);
+        return;
+    }
+
+    G_SpawnString("value", "", &self->GenericStrings[7]);
+    if (!self->GenericStrings[7] || !self->GenericStrings[7][0])
+    {
+        self->GenericStrings[7] = NULL;
+    }
+
+    G_SpawnString("equaltarget", "", &self->GenericStrings[8]);
+    if (!self->GenericStrings[8] || !self->GenericStrings[8][0])
+    {
+        self->GenericStrings[8] = NULL;
+    }
+
+    G_SpawnString("unequaltarget", "", &self->GenericStrings[9]);
+    if (!self->GenericStrings[9] || !self->GenericStrings[9][0])
+    {
+        self->GenericStrings[9] = NULL;
+    }
+
+    self->use = lmd_equalcheck_use;
 }
 
 void lmd_countcheck_use(gentity_t* self, gentity_t* other, gentity_t* activator)

@@ -6,7 +6,7 @@
 #include "Lmd_KeyPairs.h"
 
 int AccCustomDataIndex = -1;
-#define CUSTDATA(acc) (KeyPairSet_t *)Lmd_Accounts_GetAccountCategoryData(acc, AccCustomDataIndex)
+#define CUSTDATA(acc) (KeyPairSet_t *)Lmd_Accounts_GetAccCharCategoryData(acc, AccCustomDataIndex)
 
 
 qboolean Accounts_CustomSkill_Parse(char *key, char *value, void *target, void *args)
@@ -88,7 +88,7 @@ accDataModule_t Accounts_Custom = {
 
 
 void Accounts_CustomSkills_Register() {
-	AccCustomDataIndex = Lmd_Accounts_AddDataCategory(&Accounts_Custom);
+	AccCustomDataIndex = Lmd_Accounts_AddCharacterDataCategory(&Accounts_Custom);
 }
 
 
@@ -106,6 +106,7 @@ void Accounts_Custom_SetValue(Account_t *acc, char *key, char *value) {
 	if(!acc)
 		return;
 	KeyPairSet_t *set = CUSTDATA(acc);
+	if(!set) return;
 	int i = Lmd_Pairs_FindKey(set, key);
 	if(i < 0) {
 		Lmd_Pairs_New(set, key, value);
@@ -121,6 +122,7 @@ void Accounts_Custom_Clear(Account_t *acc) {
 	if(!acc)
 		return;
 	KeyPairSet_t *set = CUSTDATA(acc);
+	if(!set) return;
 	Lmd_Pairs_Clear(set);
 }
 

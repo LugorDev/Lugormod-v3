@@ -14,7 +14,7 @@
 #include "BG_Fields.h"
 
 int AccProfessionDataDataIndex = -1;
-#define PROFDATA(acc) (profData_t *)Lmd_Accounts_GetAccountCategoryData(acc, AccProfessionDataDataIndex)
+#define PROFDATA(acc) (profData_t *)Lmd_Accounts_GetAccCharCategoryData(acc, AccProfessionDataDataIndex)
 
 
 #define LEVEL_REDUCE 5
@@ -211,6 +211,9 @@ void Lmd_Prof_AccountLoaded(AccountPtr_t accPtr, void *target){
 	//Remove the unused data.
 	profData_t *profData = (profData_t *)target;
 	void **alloc = (void **)profData->data;
+	if (profData->profession < 0 || profData->profession >= NUM_PROFESSIONS ||
+		!Professions[profData->profession])
+		profData->profession = PROF_NONE;
 	void *keep = alloc[profData->profession];
 	int i;
 	for(i = 0; i < NUM_PROFESSIONS; i++) {
@@ -234,8 +237,11 @@ void Lmd_Prof_AccountLoaded(AccountPtr_t accPtr, void *target){
 
 void Lmd_Prof_Free(void *target) {
 	profData_t *profData = (profData_t *)target;
-	if(profData->data)
+	if(profData->data) {
+		profession_t *prof = Professions[profData->profession];
+		Lmd_Data_FreeFields(profData->data, prof->data.fields, prof->data.count);
 		G_Free(profData->data);
+	}
 }
 
 accDataModule_t Accounts_Profession = {
@@ -259,11 +265,12 @@ accDataModule_t Accounts_Profession = {
 };
 
 void Accounts_Prof_Register() {
-	AccProfessionDataDataIndex = Lmd_Accounts_AddDataCategory(&Accounts_Profession);
+	AccProfessionDataDataIndex = Lmd_Accounts_AddCharacterDataCategory(&Accounts_Profession);
 }
 
 void Accounts_Prof_ClearData(Account_t *acc) {
 	profData_t *data = PROFDATA(acc);
+	if(!data) return;
 	if(Professions[data->profession]->data.fields) {
 		Lmd_Data_FreeFields(data->data, Professions[data->profession]->data.fields, Professions[data->profession]->data.count);
 		memset(data->data, 0, Professions[data->profession]->data.size);
@@ -275,6 +282,7 @@ void* Accounts_Prof_GetFieldData(Account_t *acc) {
 	if(!acc)
 		return NULL;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return NULL;
 	return data->data;
 }
 void Accounts_Prof_SetModified(Account_t *acc) {
@@ -285,6 +293,7 @@ int Accounts_Prof_GetProfession(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return PROF_NONE;
 	return data->profession;
 }
 
@@ -322,7 +331,8 @@ void Accounts_Prof_SetProfession(Account_t *acc, int value) {
 		return;
 
 	profData_t *data = PROFDATA(acc);
-	
+	if(!data) return;
+
 	Accounts_Prof_ClearData(acc);
 
 	G_Free(data->data);
@@ -336,6 +346,7 @@ int Accounts_Prof_GetLevel(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return 0;
 	return data->level;
 }
 
@@ -343,6 +354,7 @@ void Accounts_Prof_SetLevel(Account_t *acc, int value) {
 	if(!acc)
 		return;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return;
 	data->level = value;
 	data->lastLevelUp = Time_Now();
 	Lmd_Accounts_Modify(acc);
@@ -352,6 +364,7 @@ int Accounts_Prof_GetLastLevelup(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return 0;
 	return data->lastLevelUp;
 }
 
@@ -445,7 +458,7 @@ int Professions_UsedSkillPoints(Account_t *acc, int prof, profSkill_t *skill){
 
 	int i, sum = 0;
 
-	if (!acc) {
+	if (!acc || prof < 0 || prof >= NUM_PROFESSIONS || !Professions[prof]) {
 		return 0;
 	}
 
@@ -763,6 +776,12 @@ void Cmd_SkillSelect(gentity_t *ent, int prof, profSkill_t *skill, int depth) {
 	char arg[MAX_STRING_CHARS];
 	Account_t *acc = ent->client->pers.Lmd.account;
 	if (!acc) {
+		return;
+	}
+
+	if (ent->client->Lmd.targetFpUsed)
+	{
+		Disp(ent, "^1Your force powers have been set. Can't change right now. Wait for them to be reset or /kill.");
 		return;
 	}
 

@@ -63,9 +63,9 @@ authFlag_t AuthFlags[] = {
 	{"UnIgnoreable", -1}, //AUTH_UNIGNOREABLE,
 	{"Cheats", 1}, //AUTH_CHEATS,
 	{"GodProf", 1}, //AUTH_GODPROF,
-	{"UberForce", 1}, //AUTH_UBERFORCE,
 	{"BotCommands", 1}, //AUTH_BOTCOMMANDS,
 	{"", 2}, //AUTH_BETACMDS,
+	{"NoFloodProtection", 0}, //AUTH_NO_FLOODPROTECTION (explicit opt-in)
 };
 
 authFile_t *Auths_GetFile(char *name){
@@ -384,6 +384,7 @@ qboolean Auths_RemoveAccAuthfile(Account_t *acc, authFile_t *file) {
 		Lmd_Accounts_Modify(acc);
 		return qtrue;
 	}
+	
 	return qfalse;
 }
 
@@ -808,8 +809,10 @@ qboolean Auths_AccHasAuthFlag(Account_t *acc, int auth) {
 
 qboolean Auths_PlayerHasAuthFlag(gentity_t *ent, int auth) {
 	int i;
+	if (!ent || !ent->client || auth < 0 || auth >= AUTH_MAX)
+		return qfalse;
 	//Check temporary auths
-	for(i = 0; i < ent->client->sess.Lmd.auths->count; i++) {
+	for(i = 0; ent->client->sess.Lmd.auths && i < ent->client->sess.Lmd.auths->count; i++) {
 		if(ent->client->sess.Lmd.auths->list[i].file->flags & (1 << auth))
 			return qtrue;
 	}
@@ -1018,6 +1021,7 @@ void Cmd_GrantAdmin_f(gentity_t *ent, int iArg){
 				Accounts_Prof_SetLevel(acc, 1);
 			}
 			Lmd_Accounts_Modify(acc);
+
 		}
 		else if(Auths_RemoveAccAuthfile(acc, file)) {
 			Disp(ent, va(CT_S"Authfile "CT_SV"%s"CT_S" removed from "CT_SV"%s", file->name, username));

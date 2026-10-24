@@ -8,18 +8,51 @@
 #include "gentity_t.h"
 
 typedef struct Account_s Account_t;
+typedef struct Character_s Character_t;
+
+#define MAX_CHARS_PER_ACCOUNT 3
 
 #define ACCFLAGS_NOPROFCRLOSS 0x0000001 //dont loose cr when profession changed.  Cleared on prof change and on levelup.
 #define ACCFLAGS_NOSECCODE	  0x0000002 // Disable security code for this account.
 
 Account_t *Accounts_GetById(int id);
 Account_t *Accounts_GetByUsername(char *str);
-Account_t *Accounts_GetByName(char *str);
+Account_t *Accounts_GetByName(char *str); // looks up by character name (any character on any account)
+
+// Multi-character API.
+Character_t *Accounts_GetCharacterByName(char *str);
+Character_t *Account_GetCharacter(Account_t *acc, int index);
+int Account_GetNumCharacters(Account_t *acc);
+Character_t *Account_GetActiveCharacter(Account_t *acc);
+void Account_SetActiveCharacter(Account_t *acc, Character_t *ch);
+Character_t *Account_FindCharacterByName(Account_t *acc, char *name);
+Character_t *Account_GetMostRecentCharacter(Account_t *acc); // highest lastPlayed; falls back to characters[0]
+Character_t *Account_NewCharacter(Account_t *acc, char *name);
+qboolean Account_DeleteCharacter(Account_t *acc, Character_t *ch);
+qboolean Account_MoveCharacter(Account_t *src, Character_t *ch, Account_t *dst);
+
+Account_t *Character_GetAccount(Character_t *ch);
+char *Character_GetName(Character_t *ch);
+void Character_SetName(Character_t *ch, char *name);
+int Character_GetCredits(Character_t *ch);
+void Character_SetCredits(Character_t *ch, int value);
+int Character_GetBounty(Character_t *ch);
+void Character_SetBounty(Character_t *ch, int value);
+int Character_GetTime(Character_t *ch);
+void Character_SetTime(Character_t *ch, int value);
+int Character_GetScore(Character_t *ch);
+void Character_SetScore(Character_t *ch, int value);
+void Character_StampLastPlayed(Character_t *ch); // sets lastPlayed = Time_Now() and marks dirty
+
+// Iterating every character across every account (for leaderboards etc.)
+unsigned int Characters_Count();
+Character_t *Characters_Get(unsigned int i);
 
 unsigned int Accounts_Count();
 Account_t* Accounts_Get(unsigned int i);
 
 void Accounts_Delete(Account_t *acc);
+qboolean Accounts_SaveChecked(Account_t *acc);
 
 int Accounts_GetId(Account_t *acc);
 #define PlayerAcc_GetId(ent) Accounts_GetId(ent->client->pers.Lmd.account)
@@ -33,7 +66,7 @@ char* Accounts_GetName(Account_t *acc);
 void Accounts_SetName(Account_t *acc, char *name);
 #define PlayerAcc_SetName(ent, value) Accounts_SetName(ent->client->pers.Lmd.account, value)
 
-int Accounts_GetPassword(Account_t *acc);
+unsigned int Accounts_GetPassword(Account_t *acc);
 
 void Accounts_SetPassword(Account_t *acc, char *password);
 #define PlayerAcc_SetPassword(ent, password) Accounts_SetPassword(ent->client->pers.Lmd.account, password)

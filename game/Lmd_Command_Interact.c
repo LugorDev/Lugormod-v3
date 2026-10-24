@@ -36,8 +36,8 @@ void Interact_Check(gentity_t *ent) {
 void Interact_Set(gentity_t *ent, gentity_t *target, vec3_t origin, int radius, char *message) {
 	vec3_t len;
 	assert(target->interact);
-	VectorSubtract(ent->s.origin, ent->client->Lmd.interact.origin, len);
-	if(VectorLength(len) > ent->client->Lmd.interact.radius) {
+	VectorSubtract(ent->s.origin, origin, len);
+	if(radius > 0 && VectorLength(len) > radius) {
 		//Too far away, don't bother.
 		return;
 	}
@@ -53,12 +53,13 @@ void Interact_Set(gentity_t *ent, gentity_t *target, vec3_t origin, int radius, 
 gentity_t* AimAnyTarget (gentity_t *ent, int length);
 qboolean PlayerUseableCheck(gentity_t *self, gentity_t *activator);
 void Cmd_Interact_f(gentity_t *ent, int iArg){
+	Interact_Check(ent);
 	gentity_t *targ = ent->client->Lmd.interact.targ;
 	if(!targ) {
 		targ = AimAnyTarget (ent, 64);
 		if(!targ)
 			return;
-		if(!PlayerUseableCheck(ent, targ))
+		if(!PlayerUseableCheck(targ, ent))
 			return;
 	}
 	if(targ->flags & FL_INACTIVE)

@@ -9,6 +9,7 @@ typedef struct gclient_s gclient_t;
 
 typedef struct Action_s Action_t;
 typedef struct Account_s Account_t;
+typedef struct Character_s Character_t;
 
 #include "q_shared.h"
 
@@ -127,12 +128,19 @@ typedef struct {
 		//RoboPhred:
 		//void            *nickPointer;
 		Account_t *account;
+		Character_t *character; // currently selected character on this account; NULL = lobby (post-login, pre-/play)
 		struct{
 			Action_t *Action;
 			unsigned int count;
 		}Actions;
 		int chatMode[2]; //[0] say, [1] team
 		int fakePing; // ping faking
+
+		qboolean teleMarkSet;
+		vec3_t teleMarkPosition;
+		vec3_t teleMarkAngles;
+		qboolean refuseTele;
+		int selectedEntity;
 	}Lmd;
 } clientPersistant_t;
 
@@ -252,6 +260,13 @@ typedef struct renderInfo_s
 
 	int			boltValidityTime;
 } renderInfo_t;
+
+typedef struct {
+	int runIndex; // 0 means none, index + 1 otherwise
+	qboolean pendingStart;
+	qboolean running;
+	qboolean pendingStop;
+} lmdHiRunClient_t;
 
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
@@ -547,6 +562,7 @@ struct gclient_s {
 		int notargetTime;
 		int invisibleTime;
 		int undyingTime;
+		int freezeTime;
 		int backupJumpLevel; // lmd_restrict jump
 
 		vec3_t mark;
@@ -611,6 +627,8 @@ struct gclient_s {
 		qboolean lockSaber;
 		int canPickUpWeapons;
 		float customForceRegenSpeedMultiplier;
+		qboolean targetFpUsed;
+		lmdHiRunClient_t hiRuns;
 	}Lmd;
 	unsigned int lastTargetUse;
 	unsigned int infoChanged;

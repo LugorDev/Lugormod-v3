@@ -983,6 +983,8 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 		//Ufo:
 		if(other->flags & FL_GODMODE) 
 			return 0;
+		if(other && other->NPC && other->NPC->scriptFlags & SCF_NO_FORCE)
+			return 0;
 		if(other->client->pers.Lmd.persistantFlags & SPF_IONLYDUEL)
 			return 0;
 
@@ -6113,7 +6115,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd ){
 			}
 			else
 			{ //hmm.. ok.. no more getting up on your own, you've gotta push something, unless..
-				if ((level.time-self->client->ps.forceHandExtendTime) > 4000)
+				if ((level.time-self->client->ps.forceHandExtendTime) > 500)
 				{ //4 seconds elapsed, I guess they're too dumb to push something to get up!
 					if (self->client->pers.cmd.upmove &&
 						self->client->ps.fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1)

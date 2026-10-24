@@ -732,7 +732,22 @@ void NPC_ApplyScriptFlags (void)
 
 	if ( (NPCInfo->scriptFlags & SCF_ALT_FIRE) && (ucmd.buttons & BUTTON_ATTACK) )
 	{//Use altfire instead
-		ucmd.buttons |= BUTTON_ALT_ATTACK;
+		if ( NPC->client->ps.weapon == WP_DISRUPTOR )
+		{
+			if ( !NPC->client->ps.zoomMode )
+			{
+				ucmd.buttons &= ~BUTTON_ATTACK;
+				ucmd.buttons |= BUTTON_ALT_ATTACK;
+			}
+			else if ( !NPC->client->ps.zoomLocked )
+			{
+				ucmd.buttons &= ~BUTTON_ATTACK;
+			}
+		}
+		else
+		{
+			ucmd.buttons |= BUTTON_ALT_ATTACK;
+		}
 	}
 }
 

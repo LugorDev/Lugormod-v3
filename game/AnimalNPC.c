@@ -190,10 +190,21 @@ static void ProcessMoveCommands( Vehicle_t *pVeh )
 	float fWalkSpeedMax;
 	int		curTime;
 	bgEntity_t *parent = pVeh->m_pParentEntity;
+	playerState_t *parentPS;
+
+	if (!parent)
+	{
+		return;
+	}
+
 #ifdef _JK2MP
-	playerState_t *parentPS = parent->playerState;
+	parentPS = parent->playerState;
+	if (!parentPS)
+	{
+		return;
+	}
 #else
-	playerState_t *parentPS = &parent->client->ps;
+	parentPS = &parent->client->ps;
 #endif
 
 #ifndef _JK2MP//SP
@@ -387,8 +398,16 @@ static void ProcessOrientCommands( Vehicle_t *pVeh )
 
 
 #ifdef _JK2MP
+	if (!parent || !parent->playerState)
+	{
+		return;
+	}
 	parentPS = parent->playerState;
-	riderPS = rider->playerState;
+	riderPS = rider ? rider->playerState : NULL;
+	if (!riderPS)
+	{
+		return;
+	}
 #else
 	parentPS = &parent->client->ps;
 	riderPS = &rider->client->ps;
@@ -496,6 +515,10 @@ static void AnimateVehicle( Vehicle_t *pVeh )
 	float			fSpeedPercToMax;
 
 #ifdef _JK2MP
+	if (!parent || !parent->playerState)
+	{
+		return;
+	}
 	pilotPS = (pilot)?(pilot->playerState):(0);
 	parentPS = parent->playerState;
 #else

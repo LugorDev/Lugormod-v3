@@ -100,6 +100,75 @@ void Svcmd_DeleteNick_f (void){
 	Com_Printf("Account %s is now deleted.\n", arg);
 }
 
+gentity_t *Accounts_GetPlayerByAcc(Account_t *acc);
+qboolean Accounts_Property_HasKeys(Account_t *acc);
+unsigned int Accounts_Friends_Count(Account_t *acc);
+qboolean Accounts_Friends_IsFriend(Account_t *acc, int otherId);
+void Svcmd_MergeAccounts_f(void) {
+	if (trap_Argc() < 3) {
+		Com_Printf("Usage:\nmergeaccounts <srcUsername> <dstUsername>\n"
+			"Moves all characters from src to dst, then deletes src. Refuses if combined\n"
+			"count exceeds the per-account cap, if either is currently logged in, or if\n"
+			"src has property/authfiles that need manual handling.\n");
+		return;
+	}
+	char srcArg[MAX_TOKEN_CHARS], dstArg[MAX_TOKEN_CHARS];
+	trap_Argv(1, srcArg, sizeof(srcArg));
+	trap_Argv(2, dstArg, sizeof(dstArg));
+	Account_t *src = Accounts_GetByUsername(srcArg);
+	Account_t *dst = Accounts_GetByUsername(dstArg);
+	if (!src) { Com_Printf("Source account not found: %s\n", srcArg); return; }
+	if (!dst) { Com_Printf("Destination account not found: %s\n", dstArg); return; }
+	if (src == dst) { Com_Printf("Source and destination are the same.\n"); return; }
+	if (Accounts_GetPlayerByAcc(src) || Accounts_GetPlayerByAcc(dst)) {
+		Com_Printf("One of the accounts is currently logged in. Have them log out first.\n");
+		return;
+	}
+	int srcCount = Account_GetNumCharacters(src);
+	int dstCount = Account_GetNumCharacters(dst);
+	if (srcCount + dstCount > MAX_CHARS_PER_ACCOUNT) {
+		Com_Printf("Combined character count (%d) exceeds the cap of %d. Delete characters first.\n",
+			srcCount + dstCount, MAX_CHARS_PER_ACCOUNT);
+		return;
+	}
+	if (Auths_AccHasAdmin(src) || Accounts_Property_HasKeys(src)) {
+		Com_Printf("Source account has authfiles or property. Transfer these manually first.\n");
+		return;
+	}
+	if (Accounts_Friends_Count(src)) {
+		Com_Printf("Source account has friends. Transfer these manually before merging.\n");
+		return;
+	}
+	for (unsigned int i = 0; i < Accounts_Count(); i++) {
+		if (Accounts_Friends_IsFriend(Accounts_Get(i), Accounts_GetId(src))) {
+			Com_Printf("Source account is on another account's friends list. Update these references before merging.\n");
+			return;
+		}
+	}
+	// Move every character.
+	Character_t *srcActive = Account_GetActiveCharacter(src);
+	Character_t *dstActive = Account_GetActiveCharacter(dst);
+	while (Account_GetNumCharacters(src) > 0) {
+		Character_t *ch = Account_GetCharacter(src, 0);
+		if (!Account_MoveCharacter(src, ch, dst)) {
+			Com_Printf("Failed to move character; aborting (state may be partial).\n");
+			return;
+		}
+	}
+	// Persist the destination before removing the only durable source copy.
+	if (!Accounts_SaveChecked(dst)) {
+		while (Account_GetNumCharacters(dst) > dstCount)
+			Account_MoveCharacter(dst, Account_GetCharacter(dst, dstCount), src);
+		Account_SetActiveCharacter(src, srcActive);
+		Account_SetActiveCharacter(dst, dstActive);
+		Com_Printf("Destination save failed. Character moves rolled back; source account retained.\n");
+		return;
+	}
+	Com_Printf("Merged %d character(s) from %s into %s. Deleting %s.\n",
+		srcCount, srcArg, dstArg, srcArg);
+	Accounts_Delete(src);
+}
+
 //RoboPhred
 extern vmCvar_t g_log;
 extern vmCvar_t g_logSync;
@@ -455,6 +524,10 @@ qboolean	ConsoleCommand( void ) {
 	}
 	if ((Q_stricmp (cmd, "deletenick") == 0)){
 		Svcmd_DeleteNick_f();
+		return qtrue;
+	}
+	if ((Q_stricmp (cmd, "mergeaccounts") == 0)) {
+		Svcmd_MergeAccounts_f();
 		return qtrue;
 	}
 	if ((Q_stricmp (cmd, "listadmins") == 0)){

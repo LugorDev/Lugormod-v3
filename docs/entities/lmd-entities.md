@@ -44,6 +44,27 @@ target6   - Corresponding target to fire.
 
 - This randomly genrates a number from 1-7 and fire the target if the number is the same. If it goes over 4, it doesn't fire anything. 4/7 of the time it will do nothing.
 
+## lmd_equalcheck * (L)
+Compares the value of a spawn key across up to six targetnames. When every referenced entity reports the same value (or matches an explicitly provided value) the entity fires `EqualTarget`; otherwise it fires `UnequalTarget`.
+
+### Keys:
+
+```
+target1-6      - targetnames whose entities should be checked.
+key            - spawn key to read from each entity. (required)
+value          - optional expected value. If omitted, the first entity found supplies the reference value.
+EqualTarget    - target to fire when all values match the reference.
+UnequalTarget  - target to fire when a mismatch is detected or a target entity/key is missing.
+```
+
+### Example code:
+
+```
+/place lmd_equalcheck * target1,pillar_a,target2,pillar_b,key,state,EqualTarget,both_active,UnequalTarget,needs_reset,
+```
+
+The example checks that entities named `pillar_a` and `pillar_b` share the same `state` key before triggering `both_active`; otherwise it fires `needs_reset`.
+
 ## lmd_restrict *(L)
 Restricts the person inside of it by whatever spawnflags are set. Use maxs/mins to set the bounding box.
 
@@ -298,6 +319,32 @@ target2   - fire if they do not meet requirements
 /place lmd_playercheck * targetname,let_me_in,level,5,target,teleport_me_in,target2,deny_msg,
 ```
 
+## lmd_entitycheck ** (L)
+Checks the same player requirements as `lmd_playercheck`. With `checkTarget`, also
+checks every named `func_door`, `lmd_door`, or `fx_runner`. `isOn,1` requires open/on;
+`isOn,0` requires closed/off. Moving doors and missing targets fail. Fires `target`
+on success and `target2` on failure. Existing `lmd_playercheck` entities still work.
+
+```
+/place lmd_entitycheck * targetname,check_vault,checkTarget,vault_door,isOn,0,target,locked,target2,unlocked,
+```
+
+## lmd_playereffect ** (L)
+Applies the selected effect to the player who triggers it.
+
+### Keys:
+
+```
+effect      - 1: Invincible, 2: Electrocution, 3: Fall to death, 4: Jail, 5: Godmode, 6: Shield, 7: Notarget, 8: Invisible, 9. Undying., 10: Freeze
+wait        - Time to play the effect for.  Default 30.
+```
+
+### Example code:
+
+```
+/place lmd_playereffect * targetname,apply_effect,effect,2,wait,5
+```
+
 ## LMD_spawner **(L)(If no targetname)
 This entity was implemented by Lugor, it should be able to use any of the keys provided for npc_spawner and one more, it also allows the NPC to respawn after it has been destroyed.
 
@@ -394,6 +441,35 @@ targetname  - make the trigger target this value for the entity to be used
 ```
 /place lmd_toggle * target,red_light,target2,blue_light,target3,green_light,count,3,targetname,light_sequence,
 ```
+## lmd_trainer *(L)
+Interactive training menu that lets players view account information, learn professions, and upgrade skills via an on-screen interface.
+
+### Keys:
+
+```
+targetname  - Activate the trainer when triggered (for example from a button or lmd_terminal).
+Color1      - Color code used for the currently selected menu option. Defaults to ^3.
+Color2      - Color code used for the main body text. Defaults to ^7.
+Color3      - Color code used for highlighted information. Defaults to ^5.
+message     - Custom text shown on the landing screen. Use `.t` for the trainer name, `.l` for the player's level, and `.n` for the player's name.
+selectsnd   - Sound played when confirming a menu choice. Defaults to `sound/movers/switches/switch1.mp3`.
+navsnd      - Sound played while navigating the menu. Defaults to `sound/interface/menuroam.mp3`.
+cancelsnd   - Sound played when cancelling or closing the menu. Defaults to `sound/interface/esc.mp3`.
+prof        - Restrict usage to specific professions (0 = any, 1 = Jedi, 2 = Merc).
+subprof     - Restrict Force users to a side (0 = any, 1 = light, 2 = dark). Only applies when `prof` is 1.
+anim        - Player animation when the menu opens (0 = console, 1 = talk, 2 = none).
+```
+
+Players must have chosen a profession to access the trainer's skill menus. Trainers can be chained together by targeting them from an `lmd_terminal` or any other entity that fires a `use` event.
+
+### Example code:
+
+```
+/place lmd_trainer 0 targetname,trainer_menu,message,Welcome .n!,Color1,^2,Color2,^7,Color3,^5,prof,1,subprof,1,
+```
+
+- Creates a Jedi-only trainer that greets the player by name and uses custom menu colors.
+
 
 ## lmd_light **(L)
 Spawns a light on the map, recommended you add a number greater than 0 to the z-axis to see the whole light

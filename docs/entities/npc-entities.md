@@ -43,6 +43,7 @@ NPC_target6     - target to fire when npc kills a player
 NPC_type        - type of NPC to be spawned
 health          - starting health 
                   (default 100)
+weaponToss      - set to 1 to let them be disarmed by force pull
 delay           - after spawned or triggered, how many seconds to wait to spawn the NPC
 showhealth      - set to 1 to show health bar on this entity when crosshair is over it
 noBasicSounds   - set to 1 to prevent loading and usage of basic sounds (pain, death, etc)
@@ -50,6 +51,7 @@ noCombatSounds  - set to 1 to prevent loading and usage of combat sounds
                   (anger, victory, etc.)
 noExtraSounds   - set to 1 to prevent loading and usage of "extra" sounds 
                   (chasing the enemy - detecting them, flanking them... also jedi combat sounds)
+forceResistLevel - <0-4> The higher, the lower the chance of getting his weapon disarmed by force pull. 4 = no chance of disarming. Default is 0.
 ```
 
 

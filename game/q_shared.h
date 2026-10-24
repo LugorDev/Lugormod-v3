@@ -218,7 +218,7 @@ static ID_INLINE short BigShort( short l) { return ShortSwap(l); }
 #define LittleShort
 static ID_INLINE int BigLong(int l) { return LongSwap(l); }
 #define LittleLong
-static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
+static ID_INLINE float BigFloat(const float *l) { return FloatSwap(l); }
 #define LittleFloat
 
 #define	PATH_SEP '\\'
@@ -1477,6 +1477,7 @@ int		COM_GetCurrentParseLine( void );
 const char	*SkipWhitespace( const char *data, qboolean *hasNewLines );
 char	*COM_Parse( const char **data_p );
 char	*COM_ParseExt( const char **data_p, qboolean allowLineBreak );
+char *COM_ParseLine(const char **data_p);
 int		COM_Compress( char *data_p );
 void	COM_ParseError( char *format, ... );
 void	COM_ParseWarning( char *format, ... );
@@ -2261,7 +2262,7 @@ typedef struct playerState_s {
 	//amount of any of these above 1 bit.
 	int			userInt1;
 	int			userInt2;
-	int			userInt3;
+	int			userInt3;	// lumaya: 1st bit is AUTH_NO_FLOODPROTECTION
 	float		userFloat1;
 	float		userFloat2;
 	float		userFloat3;

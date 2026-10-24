@@ -1654,7 +1654,7 @@ extern qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, con
 void AttachRidersGeneric( Vehicle_t *pVeh )
 {
 	// If we have a pilot, attach him to the driver tag.
-	if ( pVeh->m_pPilot )
+	if ( pVeh->m_pPilot && pVeh->m_pParentEntity)
 	{
 		mdxaBone_t boltMatrix;
 		vec3_t	yawOnlyAngles;

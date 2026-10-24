@@ -103,6 +103,7 @@ game/Lmd_Credits.c
 game/Lmd_Creditshunt.c
 game/Lmd_Crosshair.c
 game/Lmd_Data.c
+game/Lmd_HiRuns.c
 game/Lmd_Entities_Commands.c
 game/Lmd_Entities_Core.c
 game/Lmd_Entities_Ents.c
@@ -270,3 +271,16 @@ install(TARGETS GameLibrary
 RUNTIME DESTINATION lugormod
 LIBRARY DESTINATION lugormod
 )
+
+option(LMD_REGRESSION_TESTS "Build game logic regression tests with a mock engine" OFF)
+if(LMD_REGRESSION_TESTS)
+  enable_testing()
+  add_executable(GameRegression ${GAME_SRC} tests/game_regression.c)
+  target_compile_definitions(GameRegression PRIVATE "_GAME" "QAGAME" "GAME" "LMD_NEW_FORCEPOWERS" "LMD_NEW_WEAPONS" "MISSIONPACK" "_JK2" "JK2AWARDS" ${DEFINITIONS})
+  if(WIN32)
+    target_link_libraries(GameRegression ${STATIC_LIBRARIES})
+  else()
+    target_link_libraries(GameRegression m)
+  endif()
+  add_test(NAME game_regression COMMAND GameRegression)
+endif()

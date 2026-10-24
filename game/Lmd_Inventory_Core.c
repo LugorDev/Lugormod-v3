@@ -10,7 +10,7 @@
 #include "Lmd_Confirm.h"
 
 int AccInventoryDataDataIndex = -1;
-#define INVDATA(acc) (iObjectList_t *)Lmd_Accounts_GetAccountCategoryData(acc, AccInventoryDataDataIndex)
+#define INVDATA(acc) (iObjectList_t *)Lmd_Accounts_GetAccCharCategoryData(acc, AccInventoryDataDataIndex)
 
 /*
 
@@ -169,7 +169,7 @@ accDataModule_t Accounts_Inventory = {
 
 
 void Accounts_Inventory_Register() {
-	AccInventoryDataDataIndex = Lmd_Accounts_AddDataCategory(&Accounts_Inventory);
+	AccInventoryDataDataIndex = Lmd_Accounts_AddCharacterDataCategory(&Accounts_Inventory);
 }
 
 iObjectList_t *Inventory_Player_GetInventory(gentity_t *player) {
@@ -389,6 +389,7 @@ void Inventory_Player_Think(gentity_t *player) {
 
 void Inventory_Player_Login(gentity_t *player) {
 	iObjectList_t *inventory = INVDATA(player->client->pers.Lmd.account);
+	if (!inventory) return;
 	int i;
 	for(i = 0; i < inventory->count; i++) {
 		inventory->objects[i]->holder = player;
@@ -397,6 +398,7 @@ void Inventory_Player_Login(gentity_t *player) {
 
 void Inventory_Player_Logout(gentity_t *player) {
 	iObjectList_t *inventory = INVDATA(player->client->pers.Lmd.account);
+	if (!inventory) return;
 	int i;
 	for(i = 0; i < inventory->count; i++) {
 		inventory->objects[i]->holder = NULL;

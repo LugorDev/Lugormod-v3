@@ -548,6 +548,9 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	return;
 	*/
 
+	if (self && self->NPC && !self->Lmd.weaponToss)
+		return;
+
 	if ((weapon == WP_STUN_BATON 
 		&& gameMode(GMF_WITH_HOOK))
 		|| (weapon == WP_BRYAR_OLD 
@@ -3188,6 +3191,10 @@ void G_ApplyKnockback( gentity_t *targ, vec3_t newDir, float knockback )
 		mass = 999999;
 		//return;
 	}
+
+	if (targ && targ->NPC && (targ->NPC->scriptFlags & SCF_NO_HURT))
+		return;
+	
 	if ( targ->physicsBounce > 0 )	//overide the mass
 		mass = targ->physicsBounce;
 	else
@@ -4728,6 +4735,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	if (!targ->takedamage) {
 		return;
 	}
+
+	if (targ && targ->NPC && targ->NPC->scriptFlags & SCF_NO_HURT)
+		return;
 
 	//RoboPhred:
 	if(targ->s.number < MAX_CLIENTS && targ->client && attacker && attacker->client && attacker != targ && (targ->flags & FL_GODMODE || targ->flags & FL_UNDYING) && !(targ->client->ps.eFlags & EF_NODRAW)) {

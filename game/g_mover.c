@@ -1668,6 +1668,7 @@ const entityInfoData_t func_door_keys[] = {
   {"opentarget", "Door fires this after reaching it\'s \'open\' position"},
   {"target2", "Door fires this when it starts moving from it\'s open position to it\'s closed position"},
   {"closetarget", "Door fires this after reaching it\'s \'closed\' position"},
+  {"wantPosition", "Desired resting position for target_doorstate checks. Accepts 'open' or 'close'."},
   {"model2", ".md3 model to also draw"},
   {"angle", "determines the opening direction"},
   {"targetname", "if set, no touch field will be spawned and a remote button or trigger field activates the door."},
@@ -1695,9 +1696,15 @@ const entityInfo_t func_door_info = {
   func_door_keys
 };
 
-void SP_func_door (gentity_t *ent) 
+void SP_func_door (gentity_t *ent)
 {
 	//Lugormod
+
+	G_SpawnString("wantPosition", "", &ent->GenericStrings[15]);
+	if (ent->GenericStrings[15] && !ent->GenericStrings[15][0])
+	{
+		ent->GenericStrings[15] = NULL;
+	}
 
 	//RoboPhred: bugger this, screws up many mp maps
 	//if it should be kept, then add if !ent->targetname to it.
