@@ -146,6 +146,8 @@ void Svcmd_MergeAccounts_f(void) {
 		}
 	}
 	// Move every character.
+	Character_t *srcActive = Account_GetActiveCharacter(src);
+	Character_t *dstActive = Account_GetActiveCharacter(dst);
 	while (Account_GetNumCharacters(src) > 0) {
 		Character_t *ch = Account_GetCharacter(src, 0);
 		if (!Account_MoveCharacter(src, ch, dst)) {
@@ -155,7 +157,11 @@ void Svcmd_MergeAccounts_f(void) {
 	}
 	// Persist the destination before removing the only durable source copy.
 	if (!Accounts_SaveChecked(dst)) {
-		Com_Printf("Destination save failed. Source account retained; fix storage before restarting.\n");
+		while (Account_GetNumCharacters(dst) > dstCount)
+			Account_MoveCharacter(dst, Account_GetCharacter(dst, dstCount), src);
+		Account_SetActiveCharacter(src, srcActive);
+		Account_SetActiveCharacter(dst, dstActive);
+		Com_Printf("Destination save failed. Character moves rolled back; source account retained.\n");
 		return;
 	}
 	Com_Printf("Merged %d character(s) from %s into %s. Deleting %s.\n",
