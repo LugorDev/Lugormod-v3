@@ -85,7 +85,7 @@ typedef struct starSkill_s
 } starSkill_t;
 static sskillState_t p_playerInfo[MAX_CLIENTS];
 
-starSkill_t starSkills[NUM_SKILLS];
+static starSkill_t starSkills[NUM_SKILLS];
 
 int Kebab_EnableSkills(void)
 {
@@ -1281,397 +1281,49 @@ int Kebab_PassiveSkill(gentity_t* ent, int index)
 
 void Kebab_InitSkills(void)
 {
-	
-	starSkills[SKILL_BACTAS].cd = 40*1000;
-	starSkills[SKILL_BACTAS].prof = MERC;
-	starSkills[SKILL_BACTAS].function = Kebab_SummonBacta;
-	starSkills[SKILL_BACTAS].pts = 1;
-	starSkills[SKILL_BACTAS].fp = 0;
-	starSkills[SKILL_BACTAS].name = "Summoning Bactas";
-	starSkills[SKILL_BACTAS].cmdName = "summonbacta";
-	starSkills[SKILL_BACTAS].desc = "The mercenary summons big and medium bacta cannisters that restore HP per usage.";
-	starSkills[SKILL_BACTAS].isPassive = qfalse;
-
-	starSkills[SKILL_FJ].cd = 20*1000;
-	starSkills[SKILL_FJ].prof = MERC;
-	starSkills[SKILL_FJ].pts = 1;
-	starSkills[SKILL_FJ].fp = 20;
-	starSkills[SKILL_FJ].function = Kebab_FuelJump;
-	starSkills[SKILL_FJ].name = "Fuel Jump";
-	starSkills[SKILL_FJ].cmdName = "fueljump";
-	starSkills[SKILL_FJ].desc = "Releases extra flame from the jetpack, causing the user to dash in the selected direction.";
-	starSkills[SKILL_FJ].isPassive = qfalse;
-
-	starSkills[SKILL_ADRENALINE].cd = 60*1000;
-	starSkills[SKILL_ADRENALINE].prof = MERC;
-	starSkills[SKILL_ADRENALINE].pts = 2;
-	starSkills[SKILL_ADRENALINE].fp = 50;
-	starSkills[SKILL_ADRENALINE].function = Kebab_MercSprint;
-	starSkills[SKILL_ADRENALINE].name = "Adrenaline Stimulation";
-	starSkills[SKILL_ADRENALINE].cmdName = "adrenaline";
-	starSkills[SKILL_ADRENALINE].desc = "The mercenary uses biofeedback techniques to unleash more adrenaline to his blood stream, increasing his overall agility for 10 seconds.";
-	starSkills[SKILL_ADRENALINE].isPassive = qfalse;
-
-	starSkills[SKILL_CF].prof = MERC;
-	starSkills[SKILL_CF].pts = 2;
-	starSkills[SKILL_CF].name = "Cortosis Fist";
-	starSkills[SKILL_CF].cmdName = "cortosisfist";
-	starSkills[SKILL_CF].desc = "When in melee, the user is given two small cortosis daggers which double the melee damage and turn off victim's lightsabers for 2 seconds.";
-	starSkills[SKILL_CF].isPassive = qtrue;
-
-	
-	starSkills[SKILL_SLOWREGEN].cd = 80*1000;
-	starSkills[SKILL_SLOWREGEN].prof = MERC;
-	starSkills[SKILL_SLOWREGEN].function = Kebab_SlowRegen;
-	starSkills[SKILL_SLOWREGEN].pts = 3;
-	starSkills[SKILL_SLOWREGEN].fp = 0;
-	starSkills[SKILL_SLOWREGEN].name = "Slow Regeneration";
-	starSkills[SKILL_SLOWREGEN].cmdName = "slowregen";
-	starSkills[SKILL_SLOWREGEN].desc = "The mercenary makes use of crystals that weaken one's connection to the force, slowing the regeneration of their enemy down for 10 seconds.";
-	starSkills[SKILL_SLOWREGEN].isPassive = qfalse;
-
-	
-	starSkills[SKILL_FIREWALL].cd = 80*1000;
-	starSkills[SKILL_FIREWALL].prof = MERC;
-	starSkills[SKILL_FIREWALL].pts = 3;
-	starSkills[SKILL_FIREWALL].fp = 80;
-	starSkills[SKILL_FIREWALL].function = Kebab_FireWall;
-	starSkills[SKILL_FIREWALL].name = "Fire Wall";
-	starSkills[SKILL_FIREWALL].cmdName = "firewall";
-	starSkills[SKILL_FIREWALL].desc = "The mercenary defuels his jetpack completely in order to conjure a deadly fire wave.";
-	starSkills[SKILL_FIREWALL].isPassive = qfalse;
-
-	
-	starSkills[SKILL_DRUG].cd = 80*1000;
-	starSkills[SKILL_DRUG].prof = MERC;
-	starSkills[SKILL_DRUG].pts = 3;
-	starSkills[SKILL_DRUG].fp = 20;
-	starSkills[SKILL_DRUG].function = Kebab_Drug;
-	starSkills[SKILL_DRUG].name = "Drug Injection";
-	starSkills[SKILL_DRUG].cmdName = "drug";
-	starSkills[SKILL_DRUG].desc = "Drugs the target for 10 seconds, making him more vulnerable to any kind of damage.";
-	starSkills[SKILL_DRUG].isPassive = qfalse;
-
-	
-	starSkills[SKILL_AM].cd = 30*1000;
-	starSkills[SKILL_AM].prof = MERC;
-	starSkills[SKILL_AM].pts = 3;
-	starSkills[SKILL_AM].fp = 0;
-	starSkills[SKILL_AM].function = Kebab_Wallhack;
-	starSkills[SKILL_AM].name = "Seeing";
-	starSkills[SKILL_AM].cmdName = "seeing";
-	starSkills[SKILL_AM].desc = "Mercenary uses a device, which allows him to see through walls for a short period of time.";
-	starSkills[SKILL_AM].isPassive = qfalse;
-
-	
-	starSkills[SKILL_LIGHTNINGSHIELD].prof = MERC;
-	starSkills[SKILL_LIGHTNINGSHIELD].pts = 3;
-	starSkills[SKILL_LIGHTNINGSHIELD].name = "Lightning Shield";
-	starSkills[SKILL_LIGHTNINGSHIELD].cmdName = "lshield";
-	starSkills[SKILL_LIGHTNINGSHIELD].desc = "The user is able to redirect some of lightsaber damage at the attacker, as long as he has any shield left.";
-	starSkills[SKILL_LIGHTNINGSHIELD].isPassive = qtrue;
-
-	
-	starSkills[SKILL_DEMO].prof = MERC;
-	starSkills[SKILL_DEMO].pts = 4;
-	starSkills[SKILL_DEMO].name = "Demolition";
-	starSkills[SKILL_DEMO].cmdName = "demolition";
-	starSkills[SKILL_DEMO].desc = "Extensively educates the user in the art of crafting explosives, thereby increasing the range and damage of their thermal detonators, detonation packs and trip mines. Using any of aforementioned weapons will now consume fuel.";
-	starSkills[SKILL_DEMO].isPassive = qtrue;
-
-	
-	starSkills[SKILL_POISON].cd = 40*1000;
-	starSkills[SKILL_POISON].prof = MERC;
-	starSkills[SKILL_POISON].pts = 4;
-	starSkills[SKILL_POISON].fp = 20;
-	starSkills[SKILL_POISON].function = Kebab_PoisonDart;
-	starSkills[SKILL_POISON].name = "Poison Dart";
-	starSkills[SKILL_POISON].cmdName = "poisondart";
-	starSkills[SKILL_POISON].desc = "The mercenary makes use of a highly toxic dart to shoot the enemy, dealing damage over the course of 10 seconds.";
-	starSkills[SKILL_POISON].isPassive = qfalse;
-
-	
-	starSkills[SKILL_WPPROF].prof = MERC;
-	starSkills[SKILL_WPPROF].pts = 4;
-	starSkills[SKILL_WPPROF].name = "Weapon Proficiency";
-	starSkills[SKILL_WPPROF].cmdName = "weaponprof";
-	starSkills[SKILL_WPPROF].desc = "The mercenary shall spawn with every advanced weaponry existing in the Universe.";
-	starSkills[SKILL_WPPROF].isPassive = qtrue;
-
-	
-	starSkills[SKILL_IMPLANTREGEN].prof = MERC;
-	starSkills[SKILL_IMPLANTREGEN].pts = 4;
-	starSkills[SKILL_IMPLANTREGEN].name = "Implant Regeneration";
-	starSkills[SKILL_IMPLANTREGEN].cmdName = "implant";
-	starSkills[SKILL_IMPLANTREGEN].desc = "Through special implants, user is able to regenerate his health, armor and ammo by meditating with weapon melee equipped.";
-	starSkills[SKILL_IMPLANTREGEN].isPassive = qtrue;
-
-	
-	starSkills[SKILL_POUR].cd = 100*1000;
-	starSkills[SKILL_POUR].prof = MERC;
-	starSkills[SKILL_POUR].pts = 4;
-	starSkills[SKILL_POUR].fp = 50;
-	starSkills[SKILL_POUR].function = Kebab_PourFuel;
-	starSkills[SKILL_POUR].name = "Pour Fuel";
-	starSkills[SKILL_POUR].cmdName = "pourfuel";
-	starSkills[SKILL_POUR].desc = "User pours some of his fuel on a selected target, making him vulnerable to any fire attack.";
-	starSkills[SKILL_POUR].isPassive = qfalse;
-
-	
-	starSkills[SKILL_TRAINING].prof = MERC;
-	starSkills[SKILL_TRAINING].pts = 5;
-	starSkills[SKILL_TRAINING].name = "Mobility";
-	starSkills[SKILL_TRAINING].cmdName = "mobility";
-	starSkills[SKILL_TRAINING].desc = "Thanks to the special training, user is able to reach Jedi-like speed and perform various acrobations. Increases the chance of evading skills.";
-	starSkills[SKILL_TRAINING].isPassive = qtrue;
-
-	
-	starSkills[SKILL_TIMEBOMB].cd = 120*1000;
-	starSkills[SKILL_TIMEBOMB].prof = MERC;
-	starSkills[SKILL_TIMEBOMB].function = Kebab_TimeBomb;
-	starSkills[SKILL_TIMEBOMB].pts = 5;
-	starSkills[SKILL_TIMEBOMB].fp = 50;
-	starSkills[SKILL_TIMEBOMB].name = "Time Bomb";
-	starSkills[SKILL_TIMEBOMB].cmdName = "timebomb";
-	starSkills[SKILL_TIMEBOMB].desc = "Using extensive electronic knowledge, the mercenary builds a devastating time bomb that goes off in 3 seconds.";
-	starSkills[SKILL_TIMEBOMB].isPassive = qfalse;
-
-	
-	starSkills[SKILL_GRAPPLECHOKE].prof = MERC;
-	starSkills[SKILL_GRAPPLECHOKE].pts = 5;
-	starSkills[SKILL_GRAPPLECHOKE].name = "Grapple Choke";
-	starSkills[SKILL_GRAPPLECHOKE].cmdName = "grapple";
-	starSkills[SKILL_GRAPPLECHOKE].desc = "Mercenary is able to choke his opponents using Grapple Hook.";
-	starSkills[SKILL_GRAPPLECHOKE].isPassive = qtrue;
-
-	
-	starSkills[SKILL_FORCERESIST].prof = MERC;
-	starSkills[SKILL_FORCERESIST].pts = 5;
-	starSkills[SKILL_FORCERESIST].name = "Force Resistance";
-	starSkills[SKILL_FORCERESIST].cmdName = "forceresist";
-	starSkills[SKILL_FORCERESIST].desc = "Increases mercenary's resilience to knockdowns caused by forces Push and Pull. Also bestows full immunity to Mind Trick and Lightning";
-	starSkills[SKILL_FORCERESIST].isPassive = qtrue;
-
-	starSkills[SKILL_CS].prof = MERC;
-	starSkills[SKILL_CS].pts = 6;
-	starSkills[SKILL_CS].name = "Critical Hit";
-	starSkills[SKILL_CS].cmdName = "critical";
-	starSkills[SKILL_CS].desc = "Installs a pure rylith power cell in all user's weapons, increasing the direct hit damage by 10-15 points and giving a random chance of knocking down the victim.";
-	starSkills[SKILL_CS].isPassive = qtrue;
-
-	starSkills[SKILL_BLASTARMOR].prof = MERC;
-	starSkills[SKILL_BLASTARMOR].pts = 6;
-	starSkills[SKILL_BLASTARMOR].name = "Blast Armor";
-	starSkills[SKILL_BLASTARMOR].cmdName = "blastarmor";
-	starSkills[SKILL_BLASTARMOR].desc = "Reduces splash damage dealt to the user and makes lightsaber hits bounce off, preventing the enemy saberist from chaining his attacks. Works with at least 70 percent of shield.";
-	starSkills[SKILL_BLASTARMOR].isPassive = qtrue;
-
-	
-
-	
-	starSkills[SKILL_CLOAK].cd = 40*1000;
-	starSkills[SKILL_CLOAK].prof = JEDI_SITH;
-	starSkills[SKILL_CLOAK].function = Kebab_CloakSkill;
-	starSkills[SKILL_CLOAK].pts = 1;
-	starSkills[SKILL_CLOAK].fp = 0;
-	starSkills[SKILL_CLOAK].name = "Force Cloak";
-	starSkills[SKILL_CLOAK].cmdName = "forcecloak";
-	starSkills[SKILL_CLOAK].desc = "With Force Power consumption, a Force user can alter the path of photons such that he becomes invisible unless he reveals himself.";
-	starSkills[SKILL_CLOAK].isPassive = qfalse;
-
-	starSkills[SKILL_DASH].cd = 20*1000;
-	starSkills[SKILL_DASH].prof = JEDI_SITH;
-	starSkills[SKILL_DASH].function = Kebab_ForceDash;
-	starSkills[SKILL_DASH].pts = 1;
-	starSkills[SKILL_DASH].fp = 20;
-	starSkills[SKILL_DASH].name = "Force Dash";
-	starSkills[SKILL_DASH].cmdName = "forcedash";
-	starSkills[SKILL_DASH].desc = "The force user uses the force to dash with great speed in the selected direction.";
-	starSkills[SKILL_DASH].isPassive = qfalse;
-
-	starSkills[SKILL_DESTRUCTION].cd = 40*1000;
-	starSkills[SKILL_DESTRUCTION].prof = JEDI_SITH;
-	starSkills[SKILL_DESTRUCTION].function = Kebab_ForceDestruction;
-	starSkills[SKILL_DESTRUCTION].pts = 2;
-	starSkills[SKILL_DESTRUCTION].fp = 50;
-	starSkills[SKILL_DESTRUCTION].name = "Force Destruction";
-	starSkills[SKILL_DESTRUCTION].cmdName = "destruction";
-	starSkills[SKILL_DESTRUCTION].desc = "Creates and launches an energy projectile made out of Force.";
-	starSkills[SKILL_DESTRUCTION].isPassive = qfalse;
-
-	starSkills[SKILL_BATTLEMED].cd = 120*1000;
-	starSkills[SKILL_BATTLEMED].prof = JEDI_SITH;
-	starSkills[SKILL_BATTLEMED].function = Kebab_BattleMeditation;
-	starSkills[SKILL_BATTLEMED].pts = 2;
-	starSkills[SKILL_BATTLEMED].fp = 100;
-	starSkills[SKILL_BATTLEMED].name = "Battle Meditation";
-	starSkills[SKILL_BATTLEMED].cmdName = "battlemed";
-	starSkills[SKILL_BATTLEMED].desc = "Heals user's buddies, improves their defense and gives them Force Boon or Ysalimari, depending on their profession.";
-	starSkills[SKILL_BATTLEMED].isPassive = qfalse;
-
-	
-	starSkills[SKILL_DISABLEJP].cd = 60*1000;
-	starSkills[SKILL_DISABLEJP].prof = JEDI_SITH;
-	starSkills[SKILL_DISABLEJP].function = Kebab_DisableJP;
-	starSkills[SKILL_DISABLEJP].name = "Jetpack Disabling";
-	starSkills[SKILL_DISABLEJP].pts = 3;
-	starSkills[SKILL_DISABLEJP].fp = 50;
-	starSkills[SKILL_DISABLEJP].cmdName = "disablejp";
-	starSkills[SKILL_DISABLEJP].desc = "Electronically scrambles the target's jetpack through the force, disabling it for 15 seconds.";
-	starSkills[SKILL_DISABLEJP].isPassive = qfalse;
-
-	
-	starSkills[SKILL_SLOW].cd = 60*1000;
-	starSkills[SKILL_SLOW].prof = JEDI_SITH;
-	starSkills[SKILL_SLOW].pts = 3;
-	starSkills[SKILL_SLOW].fp = 50;
-	starSkills[SKILL_SLOW].function = Kebab_ForceSlow;
-	starSkills[SKILL_SLOW].name = "Force Slow";
-	starSkills[SKILL_SLOW].cmdName = "forceslow";
-	starSkills[SKILL_SLOW].desc = "The force user uses telekinesis to slow down an enemy for 15 seconds, sacrificing his own Force energy in the process.";
-	starSkills[SKILL_SLOW].isPassive = qfalse;
-
-	
-	starSkills[SKILL_SCREAM].cd = 100*1000;
-	starSkills[SKILL_SCREAM].prof = JEDI_SITH;
-	starSkills[SKILL_SCREAM].function = Kebab_ForceScream;
-	starSkills[SKILL_SCREAM].pts = 3;
-	starSkills[SKILL_SCREAM].fp = 50;
-	starSkills[SKILL_SCREAM].name = "Force Scream";
-	starSkills[SKILL_SCREAM].cmdName = "forcescream";
-	starSkills[SKILL_SCREAM].desc = "Conjures a powerful shockwave, which slows down and lightly damages enemies nearby.";
-	starSkills[SKILL_SCREAM].isPassive = qfalse;
-
-	
-	starSkills[SKILL_SHIELD].cd = 120*1000;
-	starSkills[SKILL_SHIELD].prof = JEDI_SITH;
-	starSkills[SKILL_SHIELD].function = Kebab_ForceShield;
-	starSkills[SKILL_SHIELD].pts = 3;
-	starSkills[SKILL_SHIELD].fp = 80;
-	starSkills[SKILL_SHIELD].name = "Force Shield";
-	starSkills[SKILL_SHIELD].cmdName = "forceshield";
-	starSkills[SKILL_SHIELD].desc = "Creates a powerful shield made out of Force for 30 seconds, which is capable of deflecting light weapons, gives temporary immunity to Force Powers , sSkills, and improves their vitality. Reduces damage dealt by the user and weakens his Force Powers.";
-	starSkills[SKILL_SHIELD].isPassive = qfalse;
-
-	
-	starSkills[SKILL_FORCEBODY].cd = 120*1000;
-	starSkills[SKILL_FORCEBODY].prof = JEDI_SITH;
-	starSkills[SKILL_FORCEBODY].function = Kebab_FastRegen;
-	starSkills[SKILL_FORCEBODY].pts = 3;
-	starSkills[SKILL_FORCEBODY].fp = 0;
-	starSkills[SKILL_FORCEBODY].name = "Force Body";
-	starSkills[SKILL_FORCEBODY].cmdName = "forcebody";
-	starSkills[SKILL_FORCEBODY].desc = "The force user enacts a ritual using his own blood, quadrupling his rate of regeneration for 30 seconds but also dealing damage to him.";
-	starSkills[SKILL_FORCEBODY].isPassive = qfalse;
-
-	
-	starSkills[SKILL_DODGE].prof = JEDI_SITH;
-	starSkills[SKILL_DODGE].pts = 4;
-	starSkills[SKILL_DODGE].name = "Force Reflex";
-	starSkills[SKILL_DODGE].cmdName = "forcereflex";
-	starSkills[SKILL_DODGE].desc = "Improves user's reflex and allows dodging Disruptor Rifle with 75 percent success rate. Increases the chance of evading skills.";
-	starSkills[SKILL_DODGE].isPassive = qtrue;
-
-	
-	starSkills[SKILL_BREACH].cd = 100*1000;
-	starSkills[SKILL_BREACH].prof = JEDI_SITH;
-	starSkills[SKILL_BREACH].function = Kebab_ForceBreach;
-	starSkills[SKILL_BREACH].pts = 4;
-	starSkills[SKILL_BREACH].fp = 50;
-	starSkills[SKILL_BREACH].name = "Force Breach";
-	starSkills[SKILL_BREACH].cmdName = "forcebreach";
-	starSkills[SKILL_BREACH].desc = "Turns the target into a wound in the Force, temporarily removing all buffing spells, including High Resistance and Blast Armor. This skill cannot be evaded.";
-	starSkills[SKILL_BREACH].isPassive = qfalse;
-
-	
-	starSkills[SKILL_SEVER].cd = 80*1000;
-	starSkills[SKILL_SEVER].prof = JEDI_SITH;
-	starSkills[SKILL_SEVER].function = Kebab_ForceSever;
-	starSkills[SKILL_SEVER].pts = 4;
-	starSkills[SKILL_SEVER].fp = 80;
-	starSkills[SKILL_SEVER].name = "Force Sever";
-	starSkills[SKILL_SEVER].cmdName = "forcesever";
-	starSkills[SKILL_SEVER].desc = "Strips the target from the force for 10 seconds.";
-	starSkills[SKILL_SEVER].isPassive = qfalse;
-
-	
-	starSkills[SKILL_ENERGY].cd = 60*1000;
-	starSkills[SKILL_ENERGY].prof = JEDI_SITH;
-	starSkills[SKILL_ENERGY].function = Kebab_EnergyBall;
-	starSkills[SKILL_ENERGY].pts = 4;
-	starSkills[SKILL_ENERGY].fp = 50;
-	starSkills[SKILL_ENERGY].name = "Energy Ball";
-	starSkills[SKILL_ENERGY].cmdName = "energyball";
-	starSkills[SKILL_ENERGY].desc = "Conjures a powerful Force Ball made out of concentrated energy which knocks down target on impact.";
-	starSkills[SKILL_ENERGY].isPassive = qfalse;
-
-	
-	starSkills[SKILL_FORCESTOMP].prof = JEDI_SITH;
-	starSkills[SKILL_FORCESTOMP].pts = 4;
-	starSkills[SKILL_FORCESTOMP].name = "Force Stomping";
-	starSkills[SKILL_FORCESTOMP].cmdName = "forcestomp";
-	starSkills[SKILL_FORCESTOMP].desc = "The force user gains ability to knockdown and inflict damage to opponents by crouched stomping on their heads.";
-	starSkills[SKILL_FORCESTOMP].isPassive = qtrue;
-
-	
-	starSkills[SKILL_REPULSE].cd = 80*1000;
-	starSkills[SKILL_REPULSE].prof = JEDI_SITH;
-	starSkills[SKILL_REPULSE].function = Kebab_RepulseBegin;
-	starSkills[SKILL_REPULSE].pts = 5;
-	starSkills[SKILL_REPULSE].fp = 50;
-	starSkills[SKILL_REPULSE].name = "Force Repulse";
-	starSkills[SKILL_REPULSE].cmdName = "repulse";
-	starSkills[SKILL_REPULSE].desc = "Concentrates energy to create a sudden burst that throws surrounding enemies into great distance.";
-	starSkills[SKILL_REPULSE].isPassive = qfalse;
-
-	
-	starSkills[SKILL_INSANITY].cd = 100*1000;
-	starSkills[SKILL_INSANITY].prof = JEDI_SITH;
-	starSkills[SKILL_INSANITY].function = Kebab_ForceInsanity;
-	starSkills[SKILL_INSANITY].pts = 5;
-	starSkills[SKILL_INSANITY].fp = 80;
-	starSkills[SKILL_INSANITY].name = "Force Insanity";
-	starSkills[SKILL_INSANITY].cmdName = "insanity";
-	starSkills[SKILL_INSANITY].desc = "Drives the target insane for 10 seconds. This skill cannot be evaded.";
-	starSkills[SKILL_INSANITY].isPassive = qfalse;
-
-	
-	starSkills[SKILL_INCINERATE].cd = 120*1000;
-	starSkills[SKILL_INCINERATE].prof = JEDI_SITH;
-	starSkills[SKILL_INCINERATE].function = Kebab_Incinerate;
-	starSkills[SKILL_INCINERATE].pts = 5;
-	starSkills[SKILL_INCINERATE].fp = 70;
-	starSkills[SKILL_INCINERATE].name = "Force Incineration";
-	starSkills[SKILL_INCINERATE].cmdName = "incinerate";
-	starSkills[SKILL_INCINERATE].desc = "Sets the target on fire through the Force. If the target fails to extinguish it in two seconds, they die.";
-	starSkills[SKILL_INCINERATE].isPassive = qfalse;
-
-	
-	starSkills[SKILL_SPARKSPAM].cd = 120*1000;
-	starSkills[SKILL_SPARKSPAM].prof = JEDI_SITH;
-	starSkills[SKILL_SPARKSPAM].function = Kebab_ForceCombustion;
-	starSkills[SKILL_SPARKSPAM].pts = 5;
-	starSkills[SKILL_SPARKSPAM].fp = 70;
-	starSkills[SKILL_SPARKSPAM].name = "Force Combustion";
-	starSkills[SKILL_SPARKSPAM].cmdName = "combustion";
-	starSkills[SKILL_SPARKSPAM].desc = "Heavily damages the target.";
-	starSkills[SKILL_SPARKSPAM].isPassive = qfalse;
-
-	starSkills[SKILL_HR].prof = JEDI_SITH;
-	starSkills[SKILL_HR].pts = 6;
-	starSkills[SKILL_HR].name = "High Resistance";
-	starSkills[SKILL_HR].cmdName = "highresistance";
-	starSkills[SKILL_HR].desc = "Provides high resistance to injury, improves the user's vitality and reduces the duration of the sskills casted on the user by 50 percent.";
-	starSkills[SKILL_HR].isPassive = qtrue;
-
-	starSkills[SKILL_FIRESWORD].prof = JEDI_SITH;
-	starSkills[SKILL_FIRESWORD].pts = 6;
-	starSkills[SKILL_FIRESWORD].name = "Fire Magic";
-	starSkills[SKILL_FIRESWORD].cmdName = "firemagic";
-	starSkills[SKILL_FIRESWORD].desc = "Thanks to an ancient gem, the user is granted knowledge about Fire Magic, making him immune to any fire attacks. Increases damage inflicted with a lightsaber by 10-15 points (doesn't apply to saber throw).";
-	starSkills[SKILL_FIRESWORD].isPassive = qtrue;
-
-	trap_Printf( "Skills initialized.\n");
+    static const starSkill_t catalogue[NUM_SKILLS] = {
+        { "Force Body", "The force user enacts a ritual using his own blood, quadrupling his rate of regeneration for 30 seconds but also dealing damage to him.", "forcebody", 3, Kebab_FastRegen, 120*1000, JEDI_SITH, 0, qfalse }, // SKILL_FORCEBODY
+        { "Force Destruction", "Creates and launches an energy projectile made out of Force.", "destruction", 2, Kebab_ForceDestruction, 40*1000, JEDI_SITH, 50, qfalse }, // SKILL_DESTRUCTION
+        { "Force Cloak", "With Force Power consumption, a Force user can alter the path of photons such that he becomes invisible unless he reveals himself.", "forcecloak", 1, Kebab_CloakSkill, 40*1000, JEDI_SITH, 0, qfalse }, // SKILL_CLOAK
+        { "Force Dash", "The force user uses the force to dash with great speed in the selected direction.", "forcedash", 1, Kebab_ForceDash, 20*1000, JEDI_SITH, 20, qfalse }, // SKILL_DASH
+        { "Jetpack Disabling", "Electronically scrambles the target's jetpack through the force, disabling it for 15 seconds.", "disablejp", 3, Kebab_DisableJP, 60*1000, JEDI_SITH, 50, qfalse }, // SKILL_DISABLEJP
+        { "Force Sever", "Strips the target from the force for 10 seconds.", "forcesever", 4, Kebab_ForceSever, 80*1000, JEDI_SITH, 80, qfalse }, // SKILL_SEVER
+        { "Force Slow", "The force user uses telekinesis to slow down an enemy for 15 seconds, sacrificing his own Force energy in the process.", "forceslow", 3, Kebab_ForceSlow, 60*1000, JEDI_SITH, 50, qfalse }, // SKILL_SLOW
+        { "Force Stomping", "The force user gains ability to knockdown and inflict damage to opponents by crouched stomping on their heads.", "forcestomp", 4, NULL, 0, JEDI_SITH, 0, qtrue }, // SKILL_FORCESTOMP
+        { "Force Repulse", "Concentrates energy to create a sudden burst that throws surrounding enemies into great distance.", "repulse", 5, Kebab_RepulseBegin, 80*1000, JEDI_SITH, 50, qfalse }, // SKILL_REPULSE
+        { "Slow Regeneration", "The mercenary makes use of crystals that weaken one's connection to the force, slowing the regeneration of their enemy down for 10 seconds.", "slowregen", 3, Kebab_SlowRegen, 80*1000, MERC, 0, qfalse }, // SKILL_SLOWREGEN
+        { "Time Bomb", "Using extensive electronic knowledge, the mercenary builds a devastating time bomb that goes off in 3 seconds.", "timebomb", 5, Kebab_TimeBomb, 120*1000, MERC, 50, qfalse }, // SKILL_TIMEBOMB
+        { "Poison Dart", "The mercenary makes use of a highly toxic dart to shoot the enemy, dealing damage over the course of 10 seconds.", "poisondart", 4, Kebab_PoisonDart, 40*1000, MERC, 20, qfalse }, // SKILL_POISON
+        { "Adrenaline Stimulation", "The mercenary uses biofeedback techniques to unleash more adrenaline to his blood stream, increasing his overall agility for 10 seconds.", "adrenaline", 2, Kebab_MercSprint, 60*1000, MERC, 50, qfalse }, // SKILL_ADRENALINE
+        { "Summoning Bactas", "The mercenary summons big and medium bacta cannisters that restore HP per usage.", "summonbacta", 1, Kebab_SummonBacta, 40*1000, MERC, 0, qfalse }, // SKILL_BACTAS
+        { "Force Resistance", "Increases mercenary's resilience to knockdowns caused by forces Push and Pull. Also bestows full immunity to Mind Trick and Lightning", "forceresist", 5, NULL, 0, MERC, 0, qtrue }, // SKILL_FORCERESIST
+        { "Weapon Proficiency", "The mercenary shall spawn with every advanced weaponry existing in the Universe.", "weaponprof", 4, NULL, 0, MERC, 0, qtrue }, // SKILL_WPPROF
+        { "Force Reflex", "Improves user's reflex and allows dodging Disruptor Rifle with 75 percent success rate. Increases the chance of evading skills.", "forcereflex", 4, NULL, 0, JEDI_SITH, 0, qtrue }, // SKILL_DODGE
+        { "Battle Meditation", "Heals user's buddies, improves their defense and gives them Force Boon or Ysalimari, depending on their profession.", "battlemed", 2, Kebab_BattleMeditation, 120*1000, JEDI_SITH, 100, qfalse }, // SKILL_BATTLEMED
+        { "Force Scream", "Conjures a powerful shockwave, which slows down and lightly damages enemies nearby.", "forcescream", 3, Kebab_ForceScream, 100*1000, JEDI_SITH, 50, qfalse }, // SKILL_SCREAM
+        { "Force Insanity", "Drives the target insane for 10 seconds. This skill cannot be evaded.", "insanity", 5, Kebab_ForceInsanity, 100*1000, JEDI_SITH, 80, qfalse }, // SKILL_INSANITY
+        { "Force Shield", "Creates a powerful shield made out of Force for 30 seconds, which is capable of deflecting light weapons, gives temporary immunity to Force Powers , sSkills, and improves their vitality. Reduces damage dealt by the user and weakens his Force Powers.", "forceshield", 3, Kebab_ForceShield, 120*1000, JEDI_SITH, 80, qfalse }, // SKILL_SHIELD
+        { "Energy Ball", "Conjures a powerful Force Ball made out of concentrated energy which knocks down target on impact.", "energyball", 4, Kebab_EnergyBall, 60*1000, JEDI_SITH, 50, qfalse }, // SKILL_ENERGY
+        { "Blast Armor", "Reduces splash damage dealt to the user and makes lightsaber hits bounce off, preventing the enemy saberist from chaining his attacks. Works with at least 70 percent of shield.", "blastarmor", 6, NULL, 0, MERC, 0, qtrue }, // SKILL_BLASTARMOR
+        { "Implant Regeneration", "Through special implants, user is able to regenerate his health, armor and ammo by meditating with weapon melee equipped.", "implant", 4, NULL, 0, MERC, 0, qtrue }, // SKILL_IMPLANTREGEN
+        { "Fire Wall", "The mercenary defuels his jetpack completely in order to conjure a deadly fire wave.", "firewall", 3, Kebab_FireWall, 80*1000, MERC, 80, qfalse }, // SKILL_FIREWALL
+        { "Mobility", "Thanks to the special training, user is able to reach Jedi-like speed and perform various acrobations. Increases the chance of evading skills.", "mobility", 5, NULL, 0, MERC, 0, qtrue }, // SKILL_TRAINING
+        { "Pour Fuel", "User pours some of his fuel on a selected target, making him vulnerable to any fire attack.", "pourfuel", 4, Kebab_PourFuel, 100*1000, MERC, 50, qfalse }, // SKILL_POUR
+        { "Drug Injection", "Drugs the target for 10 seconds, making him more vulnerable to any kind of damage.", "drug", 3, Kebab_Drug, 80*1000, MERC, 20, qfalse }, // SKILL_DRUG
+        { "Fuel Jump", "Releases extra flame from the jetpack, causing the user to dash in the selected direction.", "fueljump", 1, Kebab_FuelJump, 20*1000, MERC, 20, qfalse }, // SKILL_FJ
+        { "Seeing", "Mercenary uses a device, which allows him to see through walls for a short period of time.", "seeing", 3, Kebab_Wallhack, 30*1000, MERC, 0, qfalse }, // SKILL_AM
+        { "High Resistance", "Provides high resistance to injury, improves the user's vitality and reduces the duration of the sskills casted on the user by 50 percent.", "highresistance", 6, NULL, 0, JEDI_SITH, 0, qtrue }, // SKILL_HR
+        { "Force Incineration", "Sets the target on fire through the Force. If the target fails to extinguish it in two seconds, they die.", "incinerate", 5, Kebab_Incinerate, 120*1000, JEDI_SITH, 70, qfalse }, // SKILL_INCINERATE
+        { "Force Breach", "Turns the target into a wound in the Force, temporarily removing all buffing spells, including High Resistance and Blast Armor. This skill cannot be evaded.", "forcebreach", 4, Kebab_ForceBreach, 100*1000, JEDI_SITH, 50, qfalse }, // SKILL_BREACH
+        { "Cortosis Fist", "When in melee, the user is given two small cortosis daggers which double the melee damage and turn off victim's lightsabers for 2 seconds.", "cortosisfist", 2, NULL, 0, MERC, 0, qtrue }, // SKILL_CF
+        { "Demolition", "Extensively educates the user in the art of crafting explosives, thereby increasing the range and damage of their thermal detonators, detonation packs and trip mines. Using any of aforementioned weapons will now consume fuel.", "demolition", 4, NULL, 0, MERC, 0, qtrue }, // SKILL_DEMO
+        { "Critical Hit", "Installs a pure rylith power cell in all user's weapons, increasing the direct hit damage by 10-15 points and giving a random chance of knocking down the victim.", "critical", 6, NULL, 0, MERC, 0, qtrue }, // SKILL_CS
+        { "Fire Magic", "Thanks to an ancient gem, the user is granted knowledge about Fire Magic, making him immune to any fire attacks. Increases damage inflicted with a lightsaber by 10-15 points (doesn't apply to saber throw).", "firemagic", 6, NULL, 0, JEDI_SITH, 0, qtrue }, // SKILL_FIRESWORD
+        { "Force Combustion", "Heavily damages the target.", "combustion", 5, Kebab_ForceCombustion, 120*1000, JEDI_SITH, 70, qfalse }, // SKILL_SPARKSPAM
+        { "Lightning Shield", "The user is able to redirect some of lightsaber damage at the attacker, as long as he has any shield left.", "lshield", 3, NULL, 0, MERC, 0, qtrue }, // SKILL_LIGHTNINGSHIELD
+        { "Grapple Choke", "Mercenary is able to choke his opponents using Grapple Hook.", "grapple", 5, NULL, 0, MERC, 0, qtrue }, // SKILL_GRAPPLECHOKE
+    };
+    memcpy(starSkills, catalogue, sizeof(starSkills));
 }
 
 static int Kebab_HasSkill(Account_t *acc, int index, qboolean check)
