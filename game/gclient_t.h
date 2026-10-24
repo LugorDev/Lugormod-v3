@@ -9,6 +9,7 @@ typedef struct gclient_s gclient_t;
 
 typedef struct Action_s Action_t;
 typedef struct Account_s Account_t;
+typedef struct Character_s Character_t;
 
 #include "q_shared.h"
 
@@ -127,6 +128,7 @@ typedef struct {
 		//RoboPhred:
 		//void            *nickPointer;
 		Account_t *account;
+		Character_t *character; // currently selected character on this account; NULL = lobby (post-login, pre-/play)
 		struct{
 			Action_t *Action;
 			unsigned int count;

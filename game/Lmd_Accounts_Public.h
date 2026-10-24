@@ -8,6 +8,7 @@
 #define LMDAPI_ACCOUNTS_DATAMODULE_VERSION_CURRENT LMDAPI_ACCOUNTS_DATAMODULE_VERSION_1
 
 typedef void* AccountPtr_t;
+typedef void* CharacterPtr_t;
 
 typedef struct accDataModule_v1_s {
 	// Loading and saving

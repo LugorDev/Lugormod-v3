@@ -12,6 +12,7 @@
 #include "Lmd_Console.h"
 
 Account_t *Accounts_New(char *username, char *name, char *password);
+void Accounts_Save(Account_t *acc);
 
 #define LEVEL_SCORE 11
 #define MAX_LEVEL  40
@@ -478,13 +479,13 @@ void clearSkills(void){
 }
 
 int recallDroppedCredits(gentity_t *ent);
-void Inventory_Player_Logout(gentity_t *player);
+void Lmd_Accounts_Player_DeselectCharacter(gentity_t *ent);
 void Lmd_Accounts_Player_Logout(gentity_t *ent){
 	Account_t *acc = ent->client->pers.Lmd.account;
 
 	if(ent->client->pers.Lmd.jailTime > level.time)
 		return;
-	
+
 	if(!acc){
 		if(Auths_PlayerHasTempAdmin(ent)){
 			Auths_RemoveTempAdmin(ent, NULL);
@@ -493,9 +494,11 @@ void Lmd_Accounts_Player_Logout(gentity_t *ent){
 		return;
 	}
 
-	recallDroppedCredits(ent);
-	Inventory_Player_Logout(ent);
-	updatePlayer(ent);
+	if (ent->client->pers.Lmd.character) {
+		recallDroppedCredits(ent);
+		updatePlayer(ent);
+		Lmd_Accounts_Player_DeselectCharacter(ent);
+	}
 
 	ent->client->pers.Lmd.account = 0;
 	ent->client->sess.Lmd.id = 0;
@@ -515,53 +518,46 @@ int accountLiveTime(int level);
 void Lmd_IPs_AddName(IP_t ip, char *name);
 void Lmd_IPs_AddAccount(IP_t ip, int id);
 void Inventory_Player_Login(gentity_t *player);
+void Inventory_Player_Logout(gentity_t *player);
 void PlayerGuide_Player_Login(gentity_t *ent);
-qboolean Lmd_Accounts_Player_Login(gentity_t *ent, Account_t *acc){
+
+// Bind a character to a logged-in player. Pulls profession/inventory/skills onto the
+// player session, sets the in-game name, and respawns if needed. Caller must already
+// have set pers.Lmd.account.
+qboolean Lmd_Accounts_Player_SelectCharacter(gentity_t *ent, Character_t *ch) {
 	char uinfo[MAX_INFO_STRING];
-	int i;
+	if (!ent || !ent->client || !ch)
+		return qfalse;
+	Account_t *acc = ent->client->pers.Lmd.account;
+	if (!acc || Character_GetAccount(ch) != acc)
+		return qfalse;
 
-	for (i = 0; i < MAX_CLIENTS;i++){
-		if (g_entities[i].inuse && i != ent->s.number && g_entities[i].client->pers.Lmd.account == acc) {
-			return qfalse;
-		}
-	}
+	Account_SetActiveCharacter(acc, ch);
+	ent->client->pers.Lmd.character = ch;
+	Character_StampLastPlayed(ch);
 
-	if(!Accounts_Prof_GetLevel(acc)){
+	if (!Accounts_Prof_GetLevel(acc)) {
 		Accounts_Prof_SetProfession(acc, PROF_NONE);
 		Accounts_Prof_SetLevel(acc, 1);
 		Accounts_SetScore(acc, 10);
-		if(lmd_startingcr.integer > 0){
+		if (lmd_startingcr.integer > 0) {
 			Accounts_SetCredits(acc, lmd_startingcr.integer);
 			Accounts_AddFlags(acc, ACCFLAGS_NOPROFCRLOSS);
 		}
 	}
 
-	
-
-	Accounts_SetLogins(acc, Accounts_GetLogins(acc) + 1);
-
-	ent->client->pers.Lmd.playTime = level.time;
-	ent->client->pers.Lmd.account = acc;
-	ent->client->sess.Lmd.id = Accounts_GetId(acc);
-
-	Accounts_SetLastIp(acc, ent->client->sess.Lmd.ip);
-
-	Accounts_SetLastLogin(acc, Time_Now());
-	
 	int prof = Accounts_Prof_GetProfession(acc);
-	if (prof != PROF_NONE && prof != PROF_BOT){
+	if (prof != PROF_BOT) {
 		ent->flags &= ~FL_GODMODE;
-		if (ent->client->sess.sessionTeam != TEAM_SPECTATOR){
-			//ent->client->ps.persistant[PERS_SCORE]++;
+		if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 			ent->client->ps.stats[STAT_HEALTH] = ent->health = 0;
-			ClientSpawn(ent); //Ufo: why die if respawn is sufficient
-			//player_die(ent, ent, ent, 100000, MOD_SUICIDE);
+			ClientSpawn(ent);
 		}
 	}
 
 	WP_InitForcePowers(ent);
 
-	char *name = Accounts_GetName(acc);
+	char *name = Character_GetName(ch);
 	trap_GetUserinfo(ent->s.number, uinfo, sizeof(uinfo));
 	Q_strncpyz(ent->client->pers.netname, name, sizeof(ent->client->pers.netname));
 	Lmd_IPs_AddName(ent->client->sess.Lmd.ip, ent->client->pers.netname);
@@ -573,6 +569,38 @@ qboolean Lmd_Accounts_Player_Login(gentity_t *ent, Account_t *acc){
 	Inventory_Player_Login(ent);
 	PlayerGuide_Player_Login(ent);
 
+	return qtrue;
+}
+
+// Drop the currently-selected character without logging the player out of the account.
+void Lmd_Accounts_Player_DeselectCharacter(gentity_t *ent) {
+	if (!ent || !ent->client || !ent->client->pers.Lmd.character)
+		return;
+	Account_t *acc = ent->client->pers.Lmd.account;
+	Inventory_Player_Logout(ent);
+	if (acc)
+		Account_SetActiveCharacter(acc, NULL);
+	ent->client->pers.Lmd.character = NULL;
+}
+
+qboolean Lmd_Accounts_Player_Login(gentity_t *ent, Account_t *acc){
+	int i;
+
+	for (i = 0; i < MAX_CLIENTS;i++){
+		if (g_entities[i].inuse && i != ent->s.number && g_entities[i].client->pers.Lmd.account == acc) {
+			return qfalse;
+		}
+	}
+
+	Accounts_SetLogins(acc, Accounts_GetLogins(acc) + 1);
+
+	ent->client->pers.Lmd.playTime = level.time;
+	ent->client->pers.Lmd.account = acc;
+	ent->client->pers.Lmd.character = NULL;
+	ent->client->sess.Lmd.id = Accounts_GetId(acc);
+
+	Accounts_SetLastIp(acc, ent->client->sess.Lmd.ip);
+	Accounts_SetLastLogin(acc, Time_Now());
 
 	//Ufo: we don't want admins without proper flag to start with admin chatmode
 	if (Auths_AccHasAdmin(acc) && Auths_AccHasAuthFlag(acc, AUTH_ADMINCHAT)) {
@@ -583,6 +611,17 @@ qboolean Lmd_Accounts_Player_Login(gentity_t *ent, Account_t *acc){
 		ent->client->ps.userInt3 |= 1 << 1;
 	
 	Lmd_Accounts_LogAction(ent, acc, "logged in");
+
+	// Auto-select the most recently played character. Falls back to characters[0]
+	// when no character has ever been played (e.g. fresh registration / migration).
+	Character_t *recent = Account_GetMostRecentCharacter(acc);
+	if (recent) {
+		Lmd_Accounts_Player_SelectCharacter(ent, recent);
+		if (Account_GetNumCharacters(acc) > 1) {
+			Disp(ent, va("^3Resumed ^7%s^3. Use ^2/charlist^3 and ^2/charselect <name|index>^3 to switch.",
+				Character_GetName(recent)));
+		}
+	}
 
 	return qtrue;
 }
@@ -1119,10 +1158,164 @@ void Cmd_Worthy_f (gentity_t *ent, int iArg){
 	listWorthy(ent);
 }
 
+void Cmd_CharList_f(gentity_t *ent, int iArg) {
+	Account_t *acc = ent->client->pers.Lmd.account;
+	if (!acc) {
+		Disp(ent, "^3You must be logged in to use this.");
+		return;
+	}
+	int n = Account_GetNumCharacters(acc);
+	if (n == 0) {
+		Disp(ent, "^3You have no characters. Use ^2/charcreate <name>^3 to make one.");
+		return;
+	}
+	Disp(ent, va("^3Characters on this account (^2%d^3/^2%d^3):", n, MAX_CHARS_PER_ACCOUNT));
+	int i;
+	for (i = 0; i < n; i++) {
+		Character_t *ch = Account_GetCharacter(acc, i);
+		Account_SetActiveCharacter(acc, ch); // temp, so per-char getters resolve
+		int level = Accounts_Prof_GetLevel(acc);
+		int prof = Accounts_Prof_GetProfession(acc);
+		char *active = (ent->client->pers.Lmd.character == ch) ? " ^2(active)" : "";
+		Disp(ent, va("^3%d) ^7%s ^3- ^2%s^3 lvl ^2%d^3%s",
+			i + 1, Character_GetName(ch), Professions_GetName(prof), level, active));
+	}
+	// Restore active to whatever the player was actually using.
+	Account_SetActiveCharacter(acc, ent->client->pers.Lmd.character);
+}
+
+void Cmd_CharSelect_f(gentity_t *ent, int iArg) {
+	Account_t *acc = ent->client->pers.Lmd.account;
+	if (!acc) {
+		Disp(ent, "^3You must be logged in to use this.");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		Disp(ent, "^3Usage: ^2/charselect <name>^3 or ^2/charselect <number>");
+		return;
+	}
+	char arg[MAX_NETNAME];
+	trap_Argv(1, arg, sizeof(arg));
+
+	Character_t *ch = NULL;
+	int n = Account_GetNumCharacters(acc);
+
+	// Pure-numeric argument selects by 1-based index from /charlist.
+	qboolean isNumeric = (arg[0] != 0);
+	int k;
+	for (k = 0; arg[k]; k++) {
+		if (arg[k] < '0' || arg[k] > '9') { isNumeric = qfalse; break; }
+	}
+	if (isNumeric) {
+		int idx = atoi(arg);
+		if (idx < 1 || idx > n) {
+			Disp(ent, va("^3Index out of range. You have ^2%d^3 character%s.", n, n == 1 ? "" : "s"));
+			return;
+		}
+		ch = Account_GetCharacter(acc, idx - 1);
+	}
+	else {
+		ch = Account_FindCharacterByName(acc, arg);
+	}
+
+	if (!ch) {
+		Disp(ent, va("^3No character named ^2%s^3 on this account. Use ^2/charlist^3.", arg));
+		return;
+	}
+	if (ent->client->pers.Lmd.character == ch) {
+		Disp(ent, "^3That character is already active.");
+		return;
+	}
+	if (ent->client->pers.Lmd.character) {
+		updatePlayer(ent);
+		Lmd_Accounts_Player_DeselectCharacter(ent);
+	}
+	if (Lmd_Accounts_Player_SelectCharacter(ent, ch)) {
+		Disp(ent, va("^2Now playing as ^7%s^2.", Character_GetName(ch)));
+	}
+	else {
+		Disp(ent, "^1Failed to select character.");
+	}
+}
+
+void Cmd_CharCreate_f(gentity_t *ent, int iArg) {
+	Account_t *acc = ent->client->pers.Lmd.account;
+	if (!acc) {
+		Disp(ent, "^3You must be logged in to use this.");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		Disp(ent, "^3Usage: ^2/charcreate <name>");
+		return;
+	}
+	if (Account_GetNumCharacters(acc) >= MAX_CHARS_PER_ACCOUNT) {
+		Disp(ent, va("^3You already have the maximum of ^2%d^3 characters.", MAX_CHARS_PER_ACCOUNT));
+		return;
+	}
+	char name[MAX_NETNAME];
+	trap_Argv(1, name, sizeof(name));
+	char *failReason;
+	if (!IsValidPlayerName(name, ent, qtrue, &failReason)) {
+		Disp(ent, va("^1Invalid name. ^3%s", failReason ? failReason : ""));
+		return;
+	}
+	if (Accounts_GetCharacterByName(name)) {
+		Disp(ent, "^1That name is already in use.");
+		return;
+	}
+	Character_t *ch = Account_NewCharacter(acc, name);
+	if (!ch) {
+		Disp(ent, "^1Could not create character.");
+		return;
+	}
+	Accounts_Save(acc); // flush immediately so a crash before the periodic save won't drop the new char
+	Disp(ent, va("^2Character ^7%s^2 created. Use ^2/charselect %s^2 to enter the game.", name, name));
+}
+
+void Cmd_CharDelete_f(gentity_t *ent, int iArg) {
+	Account_t *acc = ent->client->pers.Lmd.account;
+	if (!acc) {
+		Disp(ent, "^3You must be logged in to use this.");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		Disp(ent, "^3Usage: ^2/chardelete <name>");
+		return;
+	}
+	char name[MAX_NETNAME];
+	trap_Argv(1, name, sizeof(name));
+	Character_t *ch = Account_FindCharacterByName(acc, name);
+	if (!ch) {
+		Disp(ent, "^3No such character.");
+		return;
+	}
+	if (Account_GetNumCharacters(acc) <= 1) {
+		Disp(ent, "^1You cannot delete your last character.");
+		return;
+	}
+	qboolean wasActive = (ent->client->pers.Lmd.character == ch);
+	if (wasActive) {
+		Lmd_Accounts_Player_DeselectCharacter(ent);
+		RenamePlayer(ent, "Padawan");
+	}
+	if (Account_DeleteCharacter(acc, ch)) {
+		Accounts_Save(acc);
+		Disp(ent, va("^2Character ^7%s^2 deleted.", name));
+		if (wasActive)
+			Disp(ent, "^3Use ^2/charselect <name>^3 to select a different character.");
+	}
+	else {
+		Disp(ent, "^1Failed to delete character.");
+	}
+}
+
 void Cmd_Inventory_f(gentity_t *ent, int iArg);
 void Cmd_Property_f(gentity_t *ent, int iArg);
 
 cmdEntry_t accountCommandEntries[] = {
+	{"charcreate", "Create a new character on your account.", Cmd_CharCreate_f, 0, qfalse, 0, 0, 0, 0},
+	{"chardelete", "Delete a character from your account.", Cmd_CharDelete_f, 0, qfalse, 0, 0, 0, 0},
+	{"charlist", "List the characters on your account.", Cmd_CharList_f, 0, qfalse, 0, 0, 0, 0},
 	{"chpasswd","Change the password for your account.", Cmd_ChPasswd_f, 0, qfalse, 1, 1, 0, 0},
 	{"credits","Check your current wealth.", Cmd_Credits_f, 0, qfalse, 1, 128, ~(1 << GT_FFA), 0},
 	{"dropcr", "Drop credits.", Cmd_Credits_f, 3, qfalse, 1, 128, ~(1 << GT_FFA), 0},
@@ -1130,6 +1323,7 @@ cmdEntry_t accountCommandEntries[] = {
 	{"login"," Login to use the name you registered with \\register.\nIf you change name when you are logged in, the new name will become the registered name.", Cmd_Login_f, 0, qfalse, 0, 1, 0, 0, qtrue},
 	{"logout", "Logs out of your account.  If you are not in an account but have admin, you will loose admin status.", Cmd_Logout_f, 0, qfalse, 1, 0, 0, 0},
 	{"pay", "Give the player you are looking at CR <amount>.", Cmd_Credits_f, 1, qfalse, 1, 128, ~(1 << GT_FFA), 0},
+	{"charselect", "Switch to one of the characters on your account. Pass name or 1-based index.", Cmd_CharSelect_f, 0, qfalse, 0, 0, 0, 0},
 	{"property", "View your owned properties.  If you have the right rank, you can modify your property access here.", Cmd_Property_f, 0, qfalse, 1, 0, 0, 0},
 	{"register", "Register your account.", Cmd_Register_f, 0, qfalse, 0, 1, 0, 0, qtrue},
 	{"seccode", "Show, edit, regenerate, or enable/disable your security code.", Cmd_Seccode_f, 0, qfalse, 1, 1, 0, 0},

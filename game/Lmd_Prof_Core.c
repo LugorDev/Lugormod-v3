@@ -14,7 +14,7 @@
 #include "BG_Fields.h"
 
 int AccProfessionDataDataIndex = -1;
-#define PROFDATA(acc) (profData_t *)Lmd_Accounts_GetAccountCategoryData(acc, AccProfessionDataDataIndex)
+#define PROFDATA(acc) (profData_t *)Lmd_Accounts_GetAccCharCategoryData(acc, AccProfessionDataDataIndex)
 
 
 #define LEVEL_REDUCE 5
@@ -259,11 +259,12 @@ accDataModule_t Accounts_Profession = {
 };
 
 void Accounts_Prof_Register() {
-	AccProfessionDataDataIndex = Lmd_Accounts_AddDataCategory(&Accounts_Profession);
+	AccProfessionDataDataIndex = Lmd_Accounts_AddCharacterDataCategory(&Accounts_Profession);
 }
 
 void Accounts_Prof_ClearData(Account_t *acc) {
 	profData_t *data = PROFDATA(acc);
+	if(!data) return;
 	if(Professions[data->profession]->data.fields) {
 		Lmd_Data_FreeFields(data->data, Professions[data->profession]->data.fields, Professions[data->profession]->data.count);
 		memset(data->data, 0, Professions[data->profession]->data.size);
@@ -275,6 +276,7 @@ void* Accounts_Prof_GetFieldData(Account_t *acc) {
 	if(!acc)
 		return NULL;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return NULL;
 	return data->data;
 }
 void Accounts_Prof_SetModified(Account_t *acc) {
@@ -285,6 +287,7 @@ int Accounts_Prof_GetProfession(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return PROF_NONE;
 	return data->profession;
 }
 
@@ -322,7 +325,8 @@ void Accounts_Prof_SetProfession(Account_t *acc, int value) {
 		return;
 
 	profData_t *data = PROFDATA(acc);
-	
+	if(!data) return;
+
 	Accounts_Prof_ClearData(acc);
 
 	G_Free(data->data);
@@ -336,6 +340,7 @@ int Accounts_Prof_GetLevel(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return 0;
 	return data->level;
 }
 
@@ -343,6 +348,7 @@ void Accounts_Prof_SetLevel(Account_t *acc, int value) {
 	if(!acc)
 		return;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return;
 	data->level = value;
 	data->lastLevelUp = Time_Now();
 	Lmd_Accounts_Modify(acc);
@@ -352,6 +358,7 @@ int Accounts_Prof_GetLastLevelup(Account_t *acc) {
 	if(!acc)
 		return 0;
 	profData_t *data = PROFDATA(acc);
+	if(!data) return 0;
 	return data->lastLevelUp;
 }
 
