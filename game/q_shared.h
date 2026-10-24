@@ -2261,7 +2261,7 @@ typedef struct playerState_s {
 	//amount of any of these above 1 bit.
 	int			userInt1;
 	int			userInt2;
-	int			userInt3;
+	int			userInt3;	// lumaya: 1st bit is AUTH_NO_FLOODPROTECTION
 	float		userFloat1;
 	float		userFloat2;
 	float		userFloat3;

@@ -1713,6 +1713,18 @@ gentity_t *NPC_Spawn_Do( gentity_t *ent )
 
 	trap_LinkEntity(newent);
 	newent->spawnflags = ent->spawnflags;
+	newent->GenericStrings[7] = ent->GenericStrings[7];
+	newent->Lmd.crosshairText = ent->Lmd.crosshairText;
+	newent->Lmd.crosshairTextRange = ent->Lmd.crosshairTextRange;
+	newent->genericValue8 = ent->genericValue8;
+	newent->genericValue9 = ent->genericValue9;
+
+	if (newent->GenericStrings[7] && newent->GenericStrings[7][0])
+	{
+		// we have a usetarg
+		newent->use = NPC_Use;
+		newent->r.svFlags |= SVF_PLAYER_USABLE;
+	}
 
 	if(ent->paintarget)
 	{	//safe to point at owner's string since memory is never freed during game
@@ -1760,7 +1772,15 @@ gentity_t *NPC_Spawn_Do( gentity_t *ent )
 
 	newent->think = NPC_Begin;
 	newent->nextthink = level.time + FRAMETIME;
-	NPC_DefaultScriptFlags( newent );
+	if (newent->genericValue8)
+	{
+		newent->NPC->scriptFlags = newent->genericValue8;
+	}
+	else
+	{
+		NPC_DefaultScriptFlags( newent );
+	}
+	
 
 	//copy over team variables, too
 	newent->s.shouldtarget = ent->s.shouldtarget;
@@ -2138,7 +2158,19 @@ void NPC_Spawn_Tjo(gentity_t *ent){
 
 	trap_LinkEntity(newent);
 	newent->spawnflags = ent->spawnflags;
+	newent->GenericStrings[7] = ent->GenericStrings[7];
+	newent->Lmd.crosshairText = ent->Lmd.crosshairText;
+	newent->Lmd.crosshairTextRange = ent->Lmd.crosshairTextRange;
+	newent->genericValue8 = ent->genericValue8;
+	newent->genericValue9 = ent->genericValue9;
 
+	if (newent->GenericStrings[7] && newent->GenericStrings[7][0])
+	{
+		// we have a usetarg
+		newent->use = NPC_Use;
+		newent->r.svFlags |= SVF_PLAYER_USABLE;
+	}
+	
 	if(ent->paintarget)
 	{	//safe to point at owner's string since memory is never freed during game
 		newent->paintarget = ent->paintarget;
@@ -2189,7 +2221,16 @@ void NPC_Spawn_Tjo(gentity_t *ent){
 
 	newent->think = NPC_Begin;
 	newent->nextthink = level.time + FRAMETIME;
-	NPC_DefaultScriptFlags( newent );
+
+
+	if (newent->genericValue8)
+	{
+		newent->NPC->scriptFlags = newent->genericValue8;
+	}
+	else
+	{
+		NPC_DefaultScriptFlags( newent );
+	}
 
 	//copy over team variables, too
 	newent->s.shouldtarget = ent->s.shouldtarget;
@@ -2466,6 +2507,7 @@ const entityInfoData_t NPC_spawner_keys[] = {
 	{"NPC_target5", "target to fire when killed for the player that killed the entity (target credits)"},
 	{"NPC_target6", "target to fire when npc kills a player"},
 	{"health", "starting health (default 100)"},
+	{"usetarget", "fires when used by player"},
 	{"showhealth", "set to 1 to show health bar on this entity when crosshair is over it"},
 	{"noBasicSounds", "set to 1 to prevent loading and usage of basic sounds (pain, death, etc)"},
 	{"noCombatSounds", "set to 1 to prevent loading and usage of combat sounds (anger, victory, etc)"},
@@ -2477,6 +2519,8 @@ const entityInfoData_t NPC_spawner_keys[] = {
 	{"painscript", "default script to run when hit"},
 	{"fleescript", "default script to run when hit and below 50 percent health"},
 	{"deathscript", "default script to run when killed"},
+	{"CrosshairText", "Displays this text when a player looks at this entity."},
+	{"CrosshairTextRange", "Displays the CrosshairText if we are at least this close to the entity."},
 	{NULL, NULL}
 };
 const entityInfo_t NPC_spawner_info = {
@@ -2516,6 +2560,12 @@ void SP_NPC_spawner( gentity_t *self){
 
 	//rww - can't cheat and do this on the client like in SP, so I'm doing this.
 	NPC_Precache(self);
+
+	G_SpawnString("usetarget", "", &self->GenericStrings[7]);
+	G_SpawnInt("forceResistLevel", "0", &self->genericValue9);
+	G_SpawnString("crosshairText", "", &self->Lmd.crosshairText);
+	G_SpawnInt("crosshairTextRange", "9999", &self->Lmd.crosshairTextRange);
+	G_SpawnInt("scriptflags", "", &self->genericValue8);
 
 	if ( self->targetname )
 		self->use = NPC_Spawn;
@@ -4626,6 +4676,12 @@ void SP_LMD_spawner (gentity_t *NPCspawner){
 		NPC_GalakMech_Precache();
 	else if ( !Q_stricmp( "wampa", NPCspawner->NPC_type ))
 		NPC_Wampa_Precache();
+
+	G_SpawnString("usetarget", "", &NPCspawner->GenericStrings[7]);
+	G_SpawnInt("forceResistLevel", "0", &NPCspawner->genericValue9);
+	G_SpawnString("crosshairText", "", &NPCspawner->Lmd.crosshairText);
+	G_SpawnInt("crosshairTextRange", "9999", &NPCspawner->Lmd.crosshairTextRange);
+	G_SpawnInt("scriptflags", "", &NPCspawner->genericValue8);
 
 	NPCspawner->damage = 60000;
 

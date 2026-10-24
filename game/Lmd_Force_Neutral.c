@@ -451,6 +451,13 @@ void Force_Throw_Client(gentity_t *self, gentity_t *target, int pushPower, qbool
 				if (randfact < 0)
 					randfact = 0;
 			}
+
+			if (target->NPC)
+			{
+				randfact -= target->genericValue9 * 3;
+				if (randfact < 0)
+					randfact = 0;
+			}
 	
 			if (canPullWeapon && Q_irand(1, 10) <= randfact && !OnSameTeam(self, target)) {
 				vec3_t uorg, vecnorm;

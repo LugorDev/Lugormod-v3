@@ -2521,6 +2521,9 @@ NOTE: always blocking projectiles in this func!
 extern qboolean G_FindClosestPointOnLineSegment( const vec3_t start, const vec3_t end, const vec3_t from, vec3_t result );
 evasionType_t Jedi_SaberBlockGo( gentity_t *self, usercmd_t *cmd, vec3_t pHitloc, vec3_t phitDir, gentity_t *incoming, float dist ) //dist = 0.0f
 {
+	if (self && self->NPC && self->NPC->scriptFlags & SCF_NO_HURT)
+		return EVASION_NONE;
+	
 	vec3_t hitloc, hitdir, diff, fwdangles={0,0,0}, right;
 	float rightdot;
 	float zdiff;

@@ -502,6 +502,8 @@ void Lmd_Accounts_Player_Logout(gentity_t *ent){
 
 	Lmd_Accounts_LogAction(ent, acc, "logged out");
 
+	ent->client->ps.userInt3 &= ~1 << 1;
+
 	RenamePlayer(ent, "Padawan");
 
 	SetTeam(ent, "s");
@@ -577,6 +579,8 @@ qboolean Lmd_Accounts_Player_Login(gentity_t *ent, Account_t *acc){
 		ent->client->pers.Lmd.chatMode[1] = SAY_ADMINS;
 	}
 
+	if (Auths_AccHasAuthFlag(acc, AUTH_NO_FLOODPROTECTION))
+		ent->client->ps.userInt3 |= 1 << 1;
 	
 	Lmd_Accounts_LogAction(ent, acc, "logged in");
 

@@ -50,6 +50,7 @@ noCombatSounds  - set to 1 to prevent loading and usage of combat sounds
                   (anger, victory, etc.)
 noExtraSounds   - set to 1 to prevent loading and usage of "extra" sounds 
                   (chasing the enemy - detecting them, flanking them... also jedi combat sounds)
+forceResistLevel - <0-4> The higher, the lower the chance of getting his weapon disarmed by force pull. 4 = no chance of disarming. Default is 0.
 ```
 
 

@@ -5749,7 +5749,6 @@ ContinueThink:
 
 				// lumaya: MediLevitate
 				lmd_meditate_levitate_update(ent);
-
 				
 				if (ent->client->Lmd.lmdMenu.entityNum != 0)
 				{

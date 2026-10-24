@@ -1012,6 +1012,13 @@ void NPC_Use( gentity_t *self, gentity_t *other, gentity_t *activator )
 		return;
 	}
 
+	if (self->GenericStrings[7] && self->GenericStrings[7][0])
+	{
+		// usetarg, do this instead
+		G_UseTargets2( self, activator, self->GenericStrings[7] );
+		return;
+	}
+
 	SaveNPCGlobals();
 	SetNPCGlobals( self );
 

@@ -1831,6 +1831,9 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	if(other->flags & FL_GODMODE)
 		return;
 
+	if (other && other->NPC && other->NPC->scriptFlags & SCF_NO_HURT)
+		return;
+
 	if ( self->spawnflags & 16 ) {
 		self->timestamp = level.time + 1000;
 	} else {

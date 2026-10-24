@@ -123,6 +123,10 @@ qboolean G_CanBeEnemy(gentity_t *self, gentity_t *enemy)
 	if ((enemy->flags & FL_GODMODE) && enemy->s.eType != ET_NPC) {
 		return qfalse;
 	}
+
+	if (enemy && enemy->NPC && enemy->NPC->scriptFlags & SCF_NO_HURT)
+		return qfalse;
+	
 	//end Lugormod
 
 	if (g_gametype.integer < GT_TEAM)
@@ -5575,6 +5579,9 @@ evasionType_t Jedi_SaberBlockGo( gentity_t *self, usercmd_t *cmd, vec3_t pHitloc
 void NPC_SetLookTarget( gentity_t *self, int entNum, int clearTime );
 void WP_SaberStartMissileBlockCheck( gentity_t *self, usercmd_t *ucmd  )
 {
+	if (self && self->NPC && self->NPC->scriptFlags & SCF_NO_HURT)
+		return;
+		
 	float		dist;
 	gentity_t	*ent, *incoming = NULL;
 	int			entityList[MAX_GENTITIES];
@@ -8110,7 +8117,8 @@ static void G_GrabSomeMofos(gentity_t *self)
 			(!BG_InGrappleMove(grabbed->client->ps.legsAnim) || grabbed->client->ps.legsAnim == BOTH_KYLE_GRAB)
 			//&& (!Auths_Inferior(self,grabbed) 
 			//    || (duelInProgress(&self->client->ps) && (self->client->ps.duelIndex == grabbed->s.number)))
-			&& !(grabbed->flags & FL_GODMODE))
+			&& !(grabbed->flags & FL_GODMODE)
+			&& !(grabbed->NPC && grabbed->NPC->scriptFlags & SCF_NO_HURT))
 		{ //grabbed an active player/npc
 			int tortureAnim = -1;
 			int correspondingAnim = -1;
