@@ -1,5 +1,6 @@
 //#include "g_local.h"
 #include "b_local.h"
+#include "Lmd_SpecialSkills.h"
 #include "w_saber.h"
 #include "ai_main.h"
 #include "../ghoul2/G2.h"
@@ -964,6 +965,7 @@ extern qboolean BG_InKnockDown( int anim ); //bg_pmove.c
 qboolean meditateProtect (gentity_t *ent); //Lugormod
 
 int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forcePower){
+	if (!SSkills_ForceAllowed(attacker, other, forcePower)) return 0;
 
 	if (other && other->client && BG_HasYsalamiri(g_gametype.integer, &other->client->ps))
 		return 0;
@@ -1067,6 +1069,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 
 qboolean WP_ForcePowerAvailable( gentity_t *self, forcePowers_t forcePower, int overrideAmt )
 {
+	if (!SSkills_ForceAllowed(self, NULL, forcePower)) return qfalse;
 	// RoboPhred: Check for invalid force powers.
 	if (forcePower < 0 || forcePower >= NUM_FORCE_POWERS) {
 		//WP_LogWeirdStuff(va("Client %s tried to get available power for invalid power %i\n", self->client->pers.netname, forcePower));
@@ -1356,6 +1359,8 @@ void WP_ForcePowerRegenerate( gentity_t *self, int overrideAmt )
 	{
 		return;
 	}
+	overrideAmt = SSkills_Regen(self, overrideAmt);
+	if (overrideAmt <= 0) return;
 	int extraForce = g_meditateExtraForce.integer;
 	if(extraForce < 0)
 		extraForce = 0;

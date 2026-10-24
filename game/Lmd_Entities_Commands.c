@@ -606,12 +606,11 @@ void Cmd_Place_f (gentity_t *ent, int iArg){
 	trace_t tr;
 	SpawnData_t *spawnData;
 
-	if (trap_Argc() < 3) {
+	trap_Argv(1, classname, sizeof(classname));
+	if (trap_Argc() < 3 && (trap_Argc() != 2 || Q_stricmp(classname, "lmd_skillshop"))) {
 		Disp(ent, "^3Usage: place <classname> <dist> <field>,<value>,...");
 		return;
 	}
-
-	trap_Argv(1, classname, sizeof(classname));
 
 	if(!isValidClassname(classname)) {
 		Disp(ent, "^3There is no entity by that classname.");
@@ -622,7 +621,8 @@ void Cmd_Place_f (gentity_t *ent, int iArg){
 
 	string = va("classname,%s,%s", classname,string);
 
-	trap_Argv(2, arg, sizeof(arg));
+	if (trap_Argc() == 2) Q_strncpyz(arg, "0", sizeof(arg));
+	else trap_Argv(2, arg, sizeof(arg));
 	spawnData = ParseEntitySpawnstring(string);
 	if(arg[0] != '*') {
 		vec3_t origin, dir;

@@ -4,6 +4,7 @@
 
 //#include "g_local.h"
 #include "b_local.h"
+#include "Lmd_SpecialSkills.h"
 #include "bg_saga.h"
 
 #include "Lmd_Accounts_Stats.h"
@@ -5393,6 +5394,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		targ->client->ps.weaponTime += 500;
 	}
 
+	damage = SSkills_Damage(targ, attacker, inflictor, damage, dflags, mod);
+	if (damage <= 0) return;
 	take = damage;
 	save = 0;
 
@@ -6103,6 +6106,7 @@ G_RadiusDamage
 ============
 */
 qboolean G_RadiusDamage ( vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, gentity_t *missile, int mod) {
+	SSkills_Demolition(attacker, &damage, &radius, mod);
 	float		points, dist;
 	gentity_t	*ent;
 	int			entityList[MAX_GENTITIES];

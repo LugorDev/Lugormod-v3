@@ -104,6 +104,7 @@ game/Lmd_Creditshunt.c
 game/Lmd_Crosshair.c
 game/Lmd_Data.c
 game/Lmd_HiRuns.c
+game/Lmd_SpecialSkills.c
 game/Lmd_Entities_Commands.c
 game/Lmd_Entities_Core.c
 game/Lmd_Entities_Ents.c

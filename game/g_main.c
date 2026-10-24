@@ -65,6 +65,7 @@ const char *verMods =
 #include "Lmd_Data.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_Medilevitate.h"
+#include "Lmd_SpecialSkills.h"
 
 level_locals_t	level;
 
@@ -344,6 +345,9 @@ vmCvar_t lmd_stashrate;
 vmCvar_t lmd_stashdepotime;
 vmCvar_t lmd_stashcr;
 vmCvar_t lmd_startingcr;
+vmCvar_t lmd_startingLevel;
+vmCvar_t lmd_specialSkills;
+vmCvar_t lmd_skillCreditCost;
 vmCvar_t lmd_enforceentwait;
 vmCvar_t lmd_spturrets;
 vmCvar_t lmd_maxsameip;
@@ -451,6 +455,9 @@ static cvarTable_t		gameCvarTable[] = {
 		"The data path that lugormod will use for its accounts, entity sets, and other files."
 	},
 	{ &lmd_mapEntitySuffix, "lmd_mapEntitySuffix", "", CVAR_TEMP, 0, qfalse, qfalse, NULL },
+	{ &lmd_startingLevel, "lmd_startingLevel", "40", CVAR_ARCHIVE, 0, qfalse, qfalse, "Starting level for new players and profession changes (1-40)." },
+	{ &lmd_specialSkills, "lmd_specialSkills", "1", CVAR_ARCHIVE, 0, qfalse, qfalse, "Enable UFO special skills and the level 40 skill shop." },
+	{ &lmd_skillCreditCost, "lmd_skillCreditCost", "100000", CVAR_ARCHIVE, 0, qfalse, qfalse, "Credits per original UFO skill point (minimum 1)." },
 	{ &lmd_startingcr, "lmd_startingCr", "0", CVAR_ARCHIVE, 0, qfalse, qfalse,
 		"The number of credits a newly registered player starts with",
 	},
@@ -5757,7 +5764,11 @@ ContinueThink:
 					{
 						if (ent->client->pers.cmd.serverTime > ent->client->Lmd.lmdMenu.lastServerTime)
 						{
-							if (menu->classname && Q_stricmp(menu->classname, "lmd_trainer") == 0)
+							if (menu->classname && !Q_stricmp(menu->classname, "lmd_skillshop"))
+							{
+								SSkills_ShopMenu(ent, menu, &ent->client->pers.cmd);
+							}
+							else if (menu->classname && Q_stricmp(menu->classname, "lmd_trainer") == 0)
 							{
 								if (level.time >= ent->client->Lmd.lmdMenu.nextUpdateTime)
 								{

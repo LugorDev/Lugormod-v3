@@ -13,6 +13,7 @@
 #include "Lmd_Arrays.h"
 #include "Lmd_Console.h"
 #include "Lmd_HiRuns.h"
+#include "Lmd_SpecialSkills.h"
 #include "Lmd_Time.h"
 
 gentity_t *G_GetJediMaster (void);
@@ -1145,6 +1146,48 @@ void Cmd_Confirm_f(gentity_t *ent, int iArg);
 void Cmd_Interact_f(gentity_t *ent, int iArg);
 
 cmdEntry_t playerCommandEntries[] = {
+	{"summonbacta", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_BACTAS + 1, qfalse, 0, 0, 0, 0},
+	{"fueljump", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FJ + 1, qfalse, 0, 0, 0, 0},
+	{"adrenaline", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_ADRENALINE + 1, qfalse, 0, 0, 0, 0},
+	{"cortosisfist", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_CF + 1, qfalse, 0, 0, 0, 0},
+	{"slowregen", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SLOWREGEN + 1, qfalse, 0, 0, 0, 0},
+	{"firewall", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FIREWALL + 1, qfalse, 0, 0, 0, 0},
+	{"drug", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DRUG + 1, qfalse, 0, 0, 0, 0},
+	{"seeing", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_AM + 1, qfalse, 0, 0, 0, 0},
+	{"lshield", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_LIGHTNINGSHIELD + 1, qfalse, 0, 0, 0, 0},
+	{"demolition", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DEMO + 1, qfalse, 0, 0, 0, 0},
+	{"poisondart", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_POISON + 1, qfalse, 0, 0, 0, 0},
+	{"weaponprof", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_WPPROF + 1, qfalse, 0, 0, 0, 0},
+	{"implant", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_IMPLANTREGEN + 1, qfalse, 0, 0, 0, 0},
+	{"pourfuel", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_POUR + 1, qfalse, 0, 0, 0, 0},
+	{"mobility", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_TRAINING + 1, qfalse, 0, 0, 0, 0},
+	{"timebomb", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_TIMEBOMB + 1, qfalse, 0, 0, 0, 0},
+	{"grapple", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_GRAPPLECHOKE + 1, qfalse, 0, 0, 0, 0},
+	{"forceresist", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FORCERESIST + 1, qfalse, 0, 0, 0, 0},
+	{"critical", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_CS + 1, qfalse, 0, 0, 0, 0},
+	{"blastarmor", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_BLASTARMOR + 1, qfalse, 0, 0, 0, 0},
+	{"forcecloak", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_CLOAK + 1, qfalse, 0, 0, 0, 0},
+	{"forcedash", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DASH + 1, qfalse, 0, 0, 0, 0},
+	{"destruction", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DESTRUCTION + 1, qfalse, 0, 0, 0, 0},
+	{"battlemed", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_BATTLEMED + 1, qfalse, 0, 0, 0, 0},
+	{"disablejp", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DISABLEJP + 1, qfalse, 0, 0, 0, 0},
+	{"forceslow", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SLOW + 1, qfalse, 0, 0, 0, 0},
+	{"forcescream", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SCREAM + 1, qfalse, 0, 0, 0, 0},
+	{"forceshield", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SHIELD + 1, qfalse, 0, 0, 0, 0},
+	{"forcebody", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FORCEBODY + 1, qfalse, 0, 0, 0, 0},
+	{"forcereflex", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_DODGE + 1, qfalse, 0, 0, 0, 0},
+	{"forcebreach", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_BREACH + 1, qfalse, 0, 0, 0, 0},
+	{"forcesever", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SEVER + 1, qfalse, 0, 0, 0, 0},
+	{"energyball", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_ENERGY + 1, qfalse, 0, 0, 0, 0},
+	{"forcestomp", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FORCESTOMP + 1, qfalse, 0, 0, 0, 0},
+	{"repulse", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_REPULSE + 1, qfalse, 0, 0, 0, 0},
+	{"insanity", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_INSANITY + 1, qfalse, 0, 0, 0, 0},
+	{"incinerate", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_INCINERATE + 1, qfalse, 0, 0, 0, 0},
+	{"combustion", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_SPARKSPAM + 1, qfalse, 0, 0, 0, 0},
+	{"highresistance", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_HR + 1, qfalse, 0, 0, 0, 0},
+	{"firemagic", "Use or inspect this UFO special skill.", SSkills_Command, SKILL_FIRESWORD + 1, qfalse, 0, 0, 0, 0},
+
+	{"sskills", "List special skills or activate an owned skill: /sskills <name>.", SSkills_Command, 0, qfalse, 0, 0, 0, 0},
 	//{"testline", "\n", Cmd_TestLine_f, 0, 1, 0, 0, 0},
 	{"actions", "List and use your current pending actions.", Cmd_Action_f, 0, qfalse, 0, 0, 0, 0},
 	{"admins", "List currently logged in admins and their level.", Cmd_AdminInfo_f, 0, qfalse, 0, 0, 0, 0},
