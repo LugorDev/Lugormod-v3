@@ -159,7 +159,7 @@ void Kebab_EvadeAnimation(gentity_t* ent)
 
 int Kebab_HasImmunity(gentity_t* ent)
 {
-	if (!ent || !ent->client || !ent->inuse || ent->s.number >= MAX_CLIENTS)
+	if (!ent || !ent->client || !ent->inuse || ent->s.number < 0 || ent->s.number >= MAX_CLIENTS)
 		return 0;
 	if (ent->health <= 0 || ent->client->sess.sessionTeam == TEAM_SPECTATOR ||
 		duelInProgress(&ent->client->ps) || ent->client->ps.m_iVehicleNum ||
@@ -476,7 +476,7 @@ int Kebab_ForceSever(gentity_t* ent)
 
 void Kebab_CloakStop(gentity_t* to)
 {
-	if (!to || !to->client)
+	if (!to || !to->client || to->s.number < 0 || to->s.number >= MAX_CLIENTS)
 		return;
 	p_playerInfo[to->s.number].cloaked = 0;
 	to->s.eFlags &= ~EF_NODRAW;
