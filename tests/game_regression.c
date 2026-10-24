@@ -6,6 +6,7 @@
 #include "../game/Lmd_Accounts_Stats.h"
 #include "../game/Lmd_Checksum.h"
 #include "../game/Lmd_SpecialSkills.h"
+#include "../game/Lmd_Commands_Core.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -193,6 +194,19 @@ int main(void) {
     CHECK(Professions_StartingLevel() == 1);
     lmd_startingLevel.integer = 40;
     lmd_specialSkills.integer = 1;
+
+    cmdEntry_t *shortcut = Commands_GetEntry("forceshield");
+    CHECK(shortcut && shortcut->func == SSkills_Command && shortcut->iArg == SKILL_SHIELD + 1);
+    int shortcuts = 0;
+    for (cmdCategory_t *category = Categories; category->name; category++) {
+        for (cmdEntry_t *entry = category->entries; entry->name; entry++) {
+            if (entry->func == SSkills_Command && entry->iArg > 0) {
+                CHECK(Commands_GetEntry(entry->name) == entry);
+                shortcuts++;
+            }
+        }
+    }
+    CHECK(shortcuts == NUM_SKILLS);
     lmd_skillCreditCost.integer = 100;
     SSkills_Init();
     SSkills_Reset(&player, qtrue);

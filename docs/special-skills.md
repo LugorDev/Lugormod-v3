@@ -32,7 +32,8 @@ profession, enough credits, and proximity to the vendor. Duplicate purchases do
 not charge credits. A failed account-file open refunds the purchase.
 
 Use `/sskills` to list your profession's skills and `/sskills <short name>` to
-activate an owned ability. Passives apply automatically; spawn-related benefits
+activate an owned ability. Original command shortcuts such as `/forcedash` and
+`/summonbacta` also work. Passives apply automatically; spawn-related benefits
 apply on the next spawn. Active skills retain UFO's cooldowns and Force/fuel
 costs. Skills cannot be cast while dead, spectating, dueling, jailed, frozen,
 using a vehicle or otherwise restricted. Cooldowns survive death and character
@@ -65,43 +66,43 @@ Prices below use the default credit multiplier.
 
 | Profession | Short name | Skill | Type | Credits |
 | --- | --- | --- | --- | ---: |
-| Jedi / Sith | `forcecloak` | Force Cloak | Active | 100,000 |
-| Mercenary | `summonbacta` | Summoning Bactas | Active | 100,000 |
-| Mercenary | `forceresist` | Force Resistance | Passive | 500,000 |
-| Jedi / Sith | `forcesever` | Force Sever | Active | 400,000 |
-| Jedi / Sith | `forcestomp` | Force Stomping | Passive | 400,000 |
-| Jedi / Sith | `forceslow` | Force Slow | Active | 300,000 |
-| Mercenary | `mobility` | Mobility | Passive | 500,000 |
-| Jedi / Sith | `forceshield` | Force Shield | Active | 300,000 |
-| Mercenary | `cortosisfist` | Cortosis Fist | Passive | 200,000 |
-| Jedi / Sith | `repulse` | Force Kebab_Repulse | Active | 500,000 |
-| Mercenary | `fueljump` | Fuel Jump | Active | 100,000 |
-| Mercenary | `drug` | Kebab_Drug Injection | Active | 300,000 |
-| Mercenary | `critical` | Critical Hit | Passive | 600,000 |
-| Jedi / Sith | `forcebreach` | Force Breach | Active | 400,000 |
-| Mercenary | `demolition` | Demolition | Passive | 400,000 |
-| Jedi / Sith | `combustion` | Force Combustion | Active | 500,000 |
-| Mercenary | `slowregen` | Slow Regeneration | Active | 300,000 |
-| Mercenary | `grapple` | Grapple Choke | Passive | 500,000 |
-| Mercenary | `poisondart` | Poison Dart | Active | 400,000 |
-| Mercenary | `pourfuel` | Pour Fuel | Active | 400,000 |
-| Mercenary | `blastarmor` | Blast Armor | Passive | 600,000 |
-| Jedi / Sith | `disablejp` | Jetpack Disabling | Active | 300,000 |
 | Jedi / Sith | `battlemed` | Battle Meditation | Active | 200,000 |
-| Jedi / Sith | `forcescream` | Force Scream | Active | 300,000 |
-| Mercenary | `firewall` | Fire Wall | Active | 300,000 |
-| Mercenary | `adrenaline` | Adrenaline Stimulation | Active | 200,000 |
-| Mercenary | `lshield` | Lightning Shield | Passive | 300,000 |
-| Mercenary | `weaponprof` | Weapon Proficiency | Passive | 400,000 |
-| Jedi / Sith | `insanity` | Force Insanity | Active | 500,000 |
-| Jedi / Sith | `forcedash` | Force Dash | Active | 100,000 |
-| Jedi / Sith | `forcebody` | Force Body | Active | 300,000 |
+| Jedi / Sith | `combustion` | Force Combustion | Active | 500,000 |
 | Jedi / Sith | `destruction` | Force Destruction | Active | 200,000 |
-| Mercenary | `seeing` | Seeing | Active | 300,000 |
+| Jedi / Sith | `disablejp` | Jetpack Disabling | Active | 300,000 |
+| Jedi / Sith | `energyball` | Energy Ball | Active | 400,000 |
 | Jedi / Sith | `firemagic` | Fire Magic | Passive | 600,000 |
+| Jedi / Sith | `forcebody` | Force Body | Active | 300,000 |
+| Jedi / Sith | `forcebreach` | Force Breach | Active | 400,000 |
+| Jedi / Sith | `forcecloak` | Force Cloak | Active | 100,000 |
+| Jedi / Sith | `forcedash` | Force Dash | Active | 100,000 |
+| Jedi / Sith | `forcereflex` | Force Reflex | Passive | 400,000 |
+| Jedi / Sith | `forcescream` | Force Scream | Active | 300,000 |
+| Jedi / Sith | `forcesever` | Force Sever | Active | 400,000 |
+| Jedi / Sith | `forceshield` | Force Shield | Active | 300,000 |
+| Jedi / Sith | `forceslow` | Force Slow | Active | 300,000 |
+| Jedi / Sith | `forcestomp` | Force Stomping | Passive | 400,000 |
 | Jedi / Sith | `highresistance` | High Resistance | Passive | 600,000 |
 | Jedi / Sith | `incinerate` | Force Incineration | Active | 500,000 |
+| Jedi / Sith | `insanity` | Force Insanity | Active | 500,000 |
+| Jedi / Sith | `repulse` | Force Repulse | Active | 500,000 |
+| Mercenary | `adrenaline` | Adrenaline Stimulation | Active | 200,000 |
+| Mercenary | `blastarmor` | Blast Armor | Passive | 600,000 |
+| Mercenary | `cortosisfist` | Cortosis Fist | Passive | 200,000 |
+| Mercenary | `critical` | Critical Hit | Passive | 600,000 |
+| Mercenary | `demolition` | Demolition | Passive | 400,000 |
+| Mercenary | `drug` | Drug Injection | Active | 300,000 |
+| Mercenary | `firewall` | Fire Wall | Active | 300,000 |
+| Mercenary | `forceresist` | Force Resistance | Passive | 500,000 |
+| Mercenary | `fueljump` | Fuel Jump | Active | 100,000 |
+| Mercenary | `grapple` | Grapple Choke | Passive | 500,000 |
 | Mercenary | `implant` | Implant Regeneration | Passive | 400,000 |
+| Mercenary | `lshield` | Lightning Shield | Passive | 300,000 |
+| Mercenary | `mobility` | Mobility | Passive | 500,000 |
+| Mercenary | `poisondart` | Poison Dart | Active | 400,000 |
+| Mercenary | `pourfuel` | Pour Fuel | Active | 400,000 |
+| Mercenary | `seeing` | Seeing | Active | 300,000 |
+| Mercenary | `slowregen` | Slow Regeneration | Active | 300,000 |
+| Mercenary | `summonbacta` | Summoning Bactas | Active | 100,000 |
 | Mercenary | `timebomb` | Time Bomb | Active | 500,000 |
-| Jedi / Sith | `energyball` | Energy Ball | Active | 400,000 |
-| Jedi / Sith | `forcereflex` | Force Reflex | Passive | 400,000 |
+| Mercenary | `weaponprof` | Weapon Proficiency | Passive | 400,000 |

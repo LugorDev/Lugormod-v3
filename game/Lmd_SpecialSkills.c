@@ -1347,7 +1347,7 @@ void Kebab_InitSkills(void)
 	starSkills[SKILL_DRUG].pts = 3;
 	starSkills[SKILL_DRUG].fp = 20;
 	starSkills[SKILL_DRUG].function = Kebab_Drug;
-	starSkills[SKILL_DRUG].name = "Kebab_Drug Injection";
+	starSkills[SKILL_DRUG].name = "Drug Injection";
 	starSkills[SKILL_DRUG].cmdName = "drug";
 	starSkills[SKILL_DRUG].desc = "Drugs the target for 10 seconds, making him more vulnerable to any kind of damage.";
 	starSkills[SKILL_DRUG].isPassive = qfalse;
@@ -1619,7 +1619,7 @@ void Kebab_InitSkills(void)
 	starSkills[SKILL_REPULSE].function = Kebab_RepulseBegin;
 	starSkills[SKILL_REPULSE].pts = 5;
 	starSkills[SKILL_REPULSE].fp = 50;
-	starSkills[SKILL_REPULSE].name = "Force Kebab_Repulse";
+	starSkills[SKILL_REPULSE].name = "Force Repulse";
 	starSkills[SKILL_REPULSE].cmdName = "repulse";
 	starSkills[SKILL_REPULSE].desc = "Concentrates energy to create a sudden burst that throws surrounding enemies into great distance.";
 	starSkills[SKILL_REPULSE].isPassive = qfalse;
