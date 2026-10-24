@@ -138,6 +138,7 @@ typedef struct {
 		vec3_t teleMarkPosition;
 		vec3_t teleMarkAngles;
 		qboolean refuseTele;
+		int selectedEntity;
 	}Lmd;
 } clientPersistant_t;
 

@@ -125,13 +125,17 @@ void Lmd_Display_Bounds(gentity_t* targ, int lineTime)
 
 void Lmd_Bounds_Think(gentity_t* targ)
 {
-    const int lineTime = 1000; // Don't set this too low, or the "Test Lines" won't work properly
-    // (They will "blink", and/or most of them will be invisible)
+	if (!targ->inuse || !targ->Lmd.displayBounds)
+	{
+		targ->think = NULL;
+		return;
+	}
 
-    Lmd_Display_Bounds(targ, lineTime);
-
-    targ->nextthink = level.time + lineTime;
+	const int lineTime = 1000;
+	Lmd_Display_Bounds(targ, lineTime);
+	targ->nextthink = level.time + lineTime;
 }
+
 
 int G_FindConfigstringIndex(const char* name, int start, int max, qboolean create);
 extern vec3_t model_mins[MAX_MODELS];
@@ -405,6 +409,109 @@ void Cmd_Nudge_f(gentity_t *ent, int iArg){
 	}
 }
 
+void Lmd_ModifyMaxsMinsSelect(gentity_t *ent, qboolean push)
+{
+	gentity_t *tEnt = GetEnt(ent->client->pers.Lmd.selectedEntity);
+	if (!tEnt || !tEnt->inuse)
+	{
+		ent->client->pers.Lmd.selectedEntity = 0;
+		Disp(ent, "^1SelectedEntity not found anymore. Selection cleared.");
+		return;
+	}
+
+	if (tEnt->Lmd.displayBounds)
+		tEnt->Lmd.displayBounds = qfalse;
+	SpawnData_t *curSpawn = tEnt->Lmd.spawnData;
+
+	SpawnData_t *backupSpawn = cloneSpawnstring(curSpawn);
+	vec3_t mins, maxs;
+
+	// Brush models use absmin/absmax relative to origin, not mins/maxs
+	if (tEnt->model && tEnt->model[0] == '*')
+	{
+		VectorSubtract(tEnt->r.absmin, tEnt->r.currentOrigin, mins);
+		VectorSubtract(tEnt->r.absmax, tEnt->r.currentOrigin, maxs);
+	}
+	else
+	{
+		VectorCopy(tEnt->r.mins, mins);
+		VectorCopy(tEnt->r.maxs, maxs);
+	}
+
+	qboolean affectXY = ent->client->buttons & BUTTON_WALKING;
+	qboolean affectZ  = ent->client->buttons & BUTTON_USE;
+
+	for ( int i = 0; i < 3; i++ )
+	{
+		qboolean affect = qfalse;
+
+		if ( affectXY )
+		{
+			affect = (i < 2);
+		}
+		else if ( affectZ )
+		{
+			affect = (i == 2);
+		}
+		else
+		{
+			affect = qtrue;
+		}
+
+		if ( !affect )
+			continue;
+
+		if ( push )
+		{
+			mins[i] -= 1.0f;
+			maxs[i] += 1.0f;
+		}
+		else
+		{
+			mins[i] += 1.0f;
+			maxs[i] -= 1.0f;
+
+			if ( mins[i] > maxs[i] )
+			{
+				float mid = (mins[i] + maxs[i]) * 0.5f;
+				mins[i] = mid;
+				maxs[i] = mid;
+			}
+		}
+	}
+
+
+	char minsStr[64], maxsStr[64];
+	Com_sprintf(minsStr, sizeof(minsStr), "%i %i %i",
+		(int)mins[0], (int)mins[1], (int)mins[2]);
+	Com_sprintf(maxsStr, sizeof(maxsStr), "%i %i %i",
+		(int)maxs[0], (int)maxs[1], (int)maxs[2]);
+					
+	// Remove brush model so entity uses mins/maxs instead of BSP bounds
+	if (tEnt->model && tEnt->model[0] == '*')
+	{
+		Lmd_Entities_deleteSpawnstringKey(curSpawn, "model");
+	}
+
+	Lmd_Entities_setSpawnstringKey(curSpawn, "mins", minsStr);
+	Lmd_Entities_setSpawnstringKey(curSpawn, "maxs", maxsStr);
+
+	if(spawnEntity(tEnt, curSpawn) == NULL){
+		Disp(ent, "^3Entity failed to respawn, reverting...");
+		if (spawnEntity(tEnt, backupSpawn) == NULL) {
+			Disp(ent, "^1Failed to revert to old spawnstring, entity did not spawn.");
+			return;
+		}
+	}
+	else{
+		tEnt->Lmd.displayBounds = qtrue;
+		tEnt->think = Lmd_Bounds_Think;
+		tEnt->nextthink = level.time;
+		Disp(ent, "^3Mins (^2%s^3). Maxs (^2%s^3).", minsStr, maxsStr);
+		removeSpawnstring(backupSpawn);
+	}
+}
+
 qboolean Action_UndoDelete(gentity_t* ent, Action_t* action)
 {
 	char arg[MAX_STRING_CHARS];
@@ -593,6 +700,36 @@ void placeinfront (gentity_t * ent, const char *string) {
 		Disp(ent, "^3Failed to spawn entity.");
 	else
 		Disp(ent, va("^3Entity spawned as number ^2%i^3.", spawn->s.number));
+}
+
+void Cmd_Select_f(gentity_t *ent, int iArg)
+{
+	char arg[MAX_STRING_CHARS];
+	if (trap_Argc() < 2)
+	{
+		Disp(ent, "^3Usage: SelectEnt <entity number>");
+		return;
+	}
+	
+	trap_Argv(1, arg, sizeof(arg));
+	int i = atoi(arg);
+	gentity_t* target = GetEnt(i);
+	if (!target || !target->inuse)
+	{
+		Disp(ent, "^3Invalid entity.");
+		return;
+	}
+
+	if (ent->client->pers.Lmd.selectedEntity == i)
+	{
+		ent->client->pers.Lmd.selectedEntity = 0;
+		target->Lmd.displayBounds = qfalse;
+		Disp(ent, "^3Unselected entity ^2%i^3.", i);
+		return;
+	}
+	
+	ent->client->pers.Lmd.selectedEntity = i;
+	Disp(ent, "^3Selected entity ^2%i^3.", i);
 }
 
 void Cmd_PlaceCannon_f (gentity_t *ent, int iArg){
@@ -2195,6 +2332,11 @@ void Cmd_NewMap_f(gentity_t* ent, int iArg)
             "<classname> <dist> [field],[value], ...\nSpawn anything. It will spawn at the distance <dist> from the surface you are aiming at. ",
             Cmd_Place_f, 1, qtrue, 1, 0, 0
         },
+	{
+		"SelectEnt",
+		"<EntityNumber>.\nSelect an Entity to have certain options afterwards.",
+		Cmd_Select_f, 1, qtrue, 1, 0, 0
+	},
         {
             "PlaceCannon", "\nSpawns an emplaced gun.", Cmd_PlaceCannon_f, 0, qtrue, 2, 0,
             (1 << GT_SIEGE) | (1 << GT_BATTLE_GROUND)

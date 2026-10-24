@@ -139,10 +139,21 @@ static void ProcessMoveCommands( Vehicle_t *pVeh )
 	float speedInc, speedIdleDec, speedIdle, speedIdleAccel, speedMin, speedMax;
 	float fWalkSpeedMax;
 	bgEntity_t *parent = pVeh->m_pParentEntity;
+	playerState_t *parentPS;
+
+	if (!parent)
+	{
+		return;
+	}
+
 #ifdef _JK2MP
-	playerState_t *parentPS = parent->playerState;
+	parentPS = parent->playerState;
+	if (!parentPS)
+	{
+		return;
+	}
 #else
-	playerState_t *parentPS = &parent->client->ps;
+	parentPS = &parent->client->ps;
 #endif
 
 	speedIdleDec = pVeh->m_pVehicleInfo->decelIdle * pVeh->m_fTimeModifier;
@@ -365,8 +376,16 @@ static void ProcessOrientCommands( Vehicle_t *pVeh )
 	}
 
 #ifdef _JK2MP
+	if (!parent || !parent->playerState)
+	{
+		return;
+	}
 	parentPS = parent->playerState;
-	riderPS = rider->playerState;
+	riderPS = rider ? rider->playerState : NULL;
+	if (!riderPS)
+	{
+		return;
+	}
 #else
 	parentPS = &parent->client->ps;
 	riderPS = &rider->client->ps;

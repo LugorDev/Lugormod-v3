@@ -418,11 +418,21 @@ static void ProcessMoveCommands( Vehicle_t *pVeh )
 	//this function should only be called from pmove.. if it gets called elsehwere,
 	//obviously this will explode.
 	int curTime = pm->cmd.serverTime;
+	playerState_t *parentPS;
+
+	if (!parent)
+	{
+		return;
+	}
 
 #ifdef _JK2MP
-	playerState_t *parentPS = parent->playerState;
+	parentPS = parent->playerState;
+	if (!parentPS)
+	{
+		return;
+	}
 #else
-	playerState_t *parentPS = &parent->client->ps;
+	parentPS = &parent->client->ps;
 #endif
 
 #ifdef _JK2MP
@@ -1542,8 +1552,16 @@ static void ProcessOrientCommands( Vehicle_t *pVeh )
 	}
 
 #ifdef _JK2MP
+	if (!parent || !parent->playerState)
+	{
+		return;
+	}
 	parentPS = parent->playerState;
-	riderPS = rider->playerState;
+	riderPS = rider ? rider->playerState : NULL;
+	if (!riderPS)
+	{
+		return;
+	}
 	isDead = (qboolean)((parentPS->eFlags&EF_DEAD)!=0);
 #else
 	parentPS = &parent->client->ps;

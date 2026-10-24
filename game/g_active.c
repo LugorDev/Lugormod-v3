@@ -9,6 +9,7 @@
 
 #include "Lmd_Commands_Auths.h"
 #include "Lmd_Crosshair.h"
+#include "Lmd_EntityCore.h"
 #include "Lmd_Professions.h"
 #include "Lmd_Prof_Merc.h"
 
@@ -1613,7 +1614,7 @@ void G_CheckClientIdle( gentity_t *ent, usercmd_t *ucmd )
 		}
 	}
 }
-
+extern void Lmd_Bounds_Think(gentity_t* targ);
 void NPC_Accelerate( gentity_t *ent, qboolean fullWalkAcc, qboolean fullRunAcc )
 {
 	if ( !ent->client || !ent->NPC )
@@ -2185,6 +2186,7 @@ qboolean Merc_CheckHook (gentity_t *ent);
 void Merc_DrawHook (gentity_t *ent);
 void Merc_Unhook (gentity_t *ent);
 float Merc_SpeedFactor(gentity_t *ent);
+extern void Lmd_ModifyMaxsMinsSelect(gentity_t *ent, qboolean push);
 extern void Cmd_GrabOffsetDec_f(gentity_t* player);
 extern void Cmd_GrabOffsetInc_f(gentity_t* player);
 void ClientThink_real( gentity_t *ent ) {
@@ -4009,10 +4011,32 @@ void ClientThink_real( gentity_t *ent ) {
 				ForceSpeed(ent, 0);
 				break;
 			case GENCMD_FORCE_THROW:
-				ent->client->Lmd.grabbing > 0 ? Cmd_GrabOffsetInc_f(ent) : ForceThrow(ent, qfalse);
+				if (ent->client->Lmd.grabbing > 0)
+				{
+					Cmd_GrabOffsetInc_f(ent);
+				}
+				else if (ent->client->pers.Lmd.selectedEntity > 0)
+				{
+					Lmd_ModifyMaxsMinsSelect(ent, qtrue);
+				}
+				else
+				{
+					ForceThrow(ent, qfalse);
+				}
 				break;
 			case GENCMD_FORCE_PULL:
-				ent->client->Lmd.grabbing > 0 ? Cmd_GrabOffsetDec_f(ent) : ForceThrow(ent, qtrue);
+				if (ent->client->Lmd.grabbing > 0)
+				{
+					Cmd_GrabOffsetDec_f(ent);
+				}
+				else if (ent->client->pers.Lmd.selectedEntity > 0)
+				{
+					Lmd_ModifyMaxsMinsSelect(ent, qfalse);
+				}
+				else
+				{
+					ForceThrow(ent, qtrue);
+				}
 				break;
 			case GENCMD_FORCE_DISTRACT:
 				ForceTelepathy(ent);
