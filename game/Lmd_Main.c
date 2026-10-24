@@ -3,6 +3,7 @@
 #include "Lmd_Crosshair.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_HiRuns.h"
+#include "Lmd_SpecialSkills.h"
 #include "Lmd_SetSaber.h"
 
 //#define LMD_MEMORY_DEBUG
@@ -37,6 +38,7 @@ void Accounts_Inventory_Register();
 void Accounts_Prof_Register();
 
 void Lmd_Startup(void) {
+	SSkills_Init();
 	Lmd_IPs_Init();
 	Commands_Init();
 	Prof_Init();
@@ -101,6 +103,7 @@ void Lmd_PlayerThink(gentity_t *ent){
 
 	if (ent->client->Lmd.thinkDelay > level.time)
 		return;
+	SSkills_Think(ent);
 
 #ifndef LMD_NEW_JETPACK
 	if (ent->client->Lmd.lmd_restrict & 4)

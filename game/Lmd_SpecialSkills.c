@@ -5,6 +5,7 @@
 #include "Lmd_Accounts_CustomSkills.h"
 #include "Lmd_EntityCore.h"
 #include "Lmd_Interact.h"
+#include "Lmd_Entities_Public.h"
 #include "Lmd_SpecialSkills.h"
 #include "Lmd_Professions.h"
 #include <limits.h>
@@ -118,7 +119,7 @@ static sskillState_t p_playerInfo[MAX_CLIENTS];
 
 starSkill_t starSkills[NUM_SKILLS];
 
-int Kebab_EnableSkills()
+int Kebab_EnableSkills(void)
 {
 	return lmd_specialSkills.integer;
 }
@@ -147,10 +148,10 @@ void Kebab_StompWave(gentity_t* ent)
 	if (ent->client->ps.groundEntityNum < MAX_CLIENTS)
 	{
 		groundEnt = SSkills_Entity(ent->client->ps.groundEntityNum);
-		if (PLAYERISVALID(targ) && !targ->client->ps.duelInProgress)
+		if (PLAYERISVALID(groundEnt) && !groundEnt->client->ps.duelInProgress)
 		{
-			G_Knockdown(targ, 5000);
-			G_Damage(targ, ent, ent, NULL, NULL, str >= 15 ? 99999 : str * 5, DAMAGE_NO_PROTECTION | DAMAGE_NO_ARMOR, MOD_FALLING);
+			G_Knockdown(groundEnt, 5000);
+			G_Damage(groundEnt, ent, ent, NULL, NULL, str >= 15 ? 99999 : str * 5, DAMAGE_NO_PROTECTION | DAMAGE_NO_ARMOR, MOD_FALLING);
 		}
 	}
 	baseDmg *= effectsMultiplier;
@@ -194,11 +195,15 @@ int Kebab_HasImmunity(gentity_t* ent)
 {
 	if (!ent || !ent->client || !ent->inuse || ent->s.number >= MAX_CLIENTS)
 		return 0;
+	if (ent->health <= 0 || ent->client->sess.sessionTeam == TEAM_SPECTATOR ||
+		duelInProgress(&ent->client->ps) || ent->client->ps.m_iVehicleNum ||
+		(ent->flags & (FL_GODMODE | FL_UNDYING)) || ent->client->invulnerableTimer > level.time ||
+		(ent->client->Lmd.flags & SNF_FREEZE) || (ent->client->Lmd.lmd_restrict & 1)) return 1;
 	return (ent->client->pers.Lmd.persistantFlags & 8	
 		|| ent->client->pers.Lmd.persistantFlags & 16	
 		|| ent->client->pers.Lmd.persistantFlags & 128	
 		|| ent->client->pers.Lmd.persistantFlags & 256		
-		|| p_playerInfo[ent->s.number].forceshield >= level.time);	
+		|| p_playerInfo[ent->s.number].forceshield > level.time);
 }
 
 int Kebab_CanEvade(gentity_t* target)
@@ -263,7 +268,7 @@ int Kebab_SlowRegen(gentity_t* ent)
 	}
 	trace_t tr;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
-	if (tr.fraction < 1.0 && tr.entityNum < 32)
+	if (tr.fraction < 1.0 && tr.entityNum < MAX_CLIENTS)
 	{
 		gentity_t* to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time)
@@ -288,7 +293,7 @@ int Kebab_SlowRegen(gentity_t* ent)
 		
 		int duration = Kebab_SkillDuration(to, &p_playerInfo[tr.entityNum].regenSlowed, 10000);
 		for (int i = 0; i < NUM_FORCE_POWERS; i++)
-			ForcePowerStop(to, i);
+			WP_ForcePowerStop(to, i);
 		to->client->ps.fd.forcePower = 0;
 		trap_SendServerCommand( ent->s.number, va("print \"^3Force regeneration of the target slowed down for %d seconds.\n\"", duration/1000));
 		trap_SendServerCommand( tr.entityNum, va("print \"^4Your force regeneration has been slowed down for %d seconds.\n\"", duration/1000));
@@ -454,7 +459,7 @@ int Kebab_ForceSever(gentity_t* ent)
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
-	if (tr.fraction < 1.0 && tr.entityNum < 32)
+	if (tr.fraction < 1.0 && tr.entityNum < MAX_CLIENTS)
 	{
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time)
@@ -485,7 +490,7 @@ int Kebab_ForceSever(gentity_t* ent)
 		to->client->ps.quickerGetup = qtrue;
 		to->client->ps.forceHandExtendTime = level.time + 10;
 		for (int i = 0; i < NUM_FORCE_POWERS; i++)
-			ForcePowerStop(to, i);
+			WP_ForcePowerStop(to, i);
 		to->client->ps.fd.forcePower = 0;
 		G_PlayEffectID(G_EffectIndex("repeater/concussion"), to->client->ps.origin, to->client->ps.viewangles);
 		return 1;
@@ -576,7 +581,7 @@ int Kebab_ForceSlow(gentity_t* ent)
 	trace_t tr;
 	gentity_t* to;
 	SSkills_AimTrace(&tr, ent, 256, NULL, NULL);
-	if (tr.fraction < 1.0 && tr.entityNum < 32)
+	if (tr.fraction < 1.0 && tr.entityNum < MAX_CLIENTS)
 	{
 		to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time)
@@ -592,7 +597,7 @@ int Kebab_ForceSlow(gentity_t* ent)
 			Kebab_EvadeAnimation(to);
 			return 1;
 		}
-		ForcePowerStop(to, FP_SPEED);
+		WP_ForcePowerStop(to, FP_SPEED);
 		NPC_SetAnim(ent, SETANIM_BOTH, 1374, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
 		G_PlayEffectID(G_EffectIndex("repeater/concussion"), to->client->ps.origin, to->client->ps.viewangles);
 		int duration = Kebab_SkillDuration(to, NULL, 15000);
@@ -631,7 +636,7 @@ int Kebab_PoisonDart(gentity_t* ent)
 	}
 	trace_t tr;
 	SSkills_AimTrace(&tr, ent, 1024, NULL, NULL);
-	if (tr.fraction < 1.0 && tr.entityNum < 32)
+	if (tr.fraction < 1.0 && tr.entityNum < MAX_CLIENTS)
 	{
 		gentity_t* to = SSkills_Entity(tr.entityNum);
 		if (!to || !to->client || to->client->ps.duelInProgress || to->client->invulnerableTimer > level.time || p_playerInfo[tr.entityNum].poisoned > level.time)
@@ -1193,7 +1198,7 @@ int Kebab_ForceBreach(gentity_t* ent)
 			{
 				to->client->ps.powerups[i] = 0;
 			}
-			ForcePowerStop(to, i);
+			WP_ForcePowerStop(to, i);
 		}
 		trap_SendServerCommand( ent->s.number, va("print \"^3The target has become a wound in the Force for %d seconds. Target's passive sskills have been disabled for %d seconds.\n\"", duration/1000, duration/1000 + 5));
 		trap_SendServerCommand( tr.entityNum, va("print \"^4You have become a wound in the Force for %d seconds. Your passive sskills have been disabled for %d seconds.\n\"", duration/1000, duration/1000 + 5));
@@ -1264,7 +1269,7 @@ void Kebab_ForceCombustionDo(gentity_t* ent)
 			return;
 		if (Kebab_HasImmunity(to))
 			return;
-		damage = 1000 / sqrt(Distance(ent->client->ps.origin, to->client->ps.origin));
+		damage = 1000 / sqrt(max(1.0f, Distance(ent->client->ps.origin, to->client->ps.origin)));
 		G_Damage(to, ent, ent, NULL, NULL, damage, DAMAGE_NO_PROTECTION, MOD_LAVA);
 		G_PlayEffectID(G_EffectIndex("effects/explosions/droidexplosion1"), tr.endpos, ent->client->ps.viewangles);
 	}
@@ -1279,7 +1284,7 @@ int Kebab_ForceCombustion(gentity_t* ent)
 	}
 	p_playerInfo[ent->s.number].sparktime = level.time + 10*1000; 
 	for (int i = 0; i < NUM_FORCE_POWERS; i++)
-		ForcePowerStop(ent, i);
+		WP_ForcePowerStop(ent, i);
 	ent->client->Lmd.customSpeed.value = trap_Cvar_VariableIntegerValue("g_speed") * 0.1;
 	ent->client->Lmd.customSpeed.time = level.time + 10000;
 	return 1;
@@ -1292,8 +1297,8 @@ int Kebab_PassiveSkill(gentity_t* ent, int index)
 	if (Kebab_HasImmunity(ent) || ent->client->Lmd.lmd_restrict & 32 || ent->client->invulnerableTimer >= level.time)
 		return 0;
 	Account_t* acc = ent->client->pers.Lmd.account;
-	if (!acc || p_playerInfo[ent->s.number].breach + 5000 >= level.time || 
-		((index == SKILL_BLASTARMOR && ent->client->ps.stats[STAT_ARMOR] < ent->client->ps.stats[STAT_MAX_HEALTH]) * 0.7) || 
+	if (!acc || (p_playerInfo[ent->s.number].breach > 0 && p_playerInfo[ent->s.number].breach + 5000 >= level.time) ||
+		(index == SKILL_BLASTARMOR && ent->client->ps.stats[STAT_ARMOR] < ent->client->ps.stats[STAT_MAX_HEALTH] * 0.7) ||
 		(ent->client->ps.duelInProgress && Accounts_Prof_GetProfession(ent->client->pers.Lmd.account) != MERC) || 
 		(index == SKILL_LIGHTNINGSHIELD && ent->client->ps.stats[STAT_ARMOR] < 1))
 	{
@@ -1304,7 +1309,7 @@ int Kebab_PassiveSkill(gentity_t* ent, int index)
 
 
 
-void Kebab_InitSkills()
+void Kebab_InitSkills(void)
 {
 	
 	starSkills[SKILL_BACTAS].cd = 40*1000;
@@ -1874,4 +1879,256 @@ void SSkills_Spawn(gentity_t *ent)
         ent->client->ps.fd.forcePowerLevel[FP_GRIP] = 3;
         ent->client->ps.trueNonJedi = qfalse;
     }
+}
+
+static void SSkills_Heal(gentity_t *ent, int health, int armor)
+{
+    int cap = ent->client->ps.stats[STAT_MAX_HEALTH];
+    ent->health = min(cap, ent->health + health);
+    ent->client->ps.stats[STAT_HEALTH] = ent->health;
+    ent->client->ps.stats[STAT_ARMOR] = min(cap, ent->client->ps.stats[STAT_ARMOR] + armor);
+}
+
+void SSkills_Think(gentity_t *ent)
+{
+    if (!PLAYERISVALID(ent)) return;
+    sskillState_t *s = &p_playerInfo[ent->s.number];
+    if (!lmd_specialSkills.integer || ent->health <= 0 || ent->client->sess.sessionTeam == TEAM_SPECTATOR ||
+        duelInProgress(&ent->client->ps) || !ent->client->pers.Lmd.account) {
+        SSkills_Reset(ent, qfalse);
+        return;
+    }
+    if (s->thinkDelay > level.time) return;
+    s->thinkDelay = level.time + 200;
+    qboolean immune = (ent->flags & (FL_GODMODE | FL_UNDYING)) ||
+        (ent->client->Lmd.lmd_restrict & 1) || ent->client->invulnerableTimer > level.time;
+    qboolean rolling = ent->client->ps.legsAnim >= BOTH_ROLL_F && ent->client->ps.legsAnim <= BOTH_ROLL_R;
+    if (s->severed > level.time) ent->client->ps.fd.forcePower = 0;
+    if (s->fastRegen && s->fastRegen <= level.time) {
+        ent->client->ps.fd.forcePowerMax = s->fpcap;
+        ent->client->ps.fd.forcePower = min(s->fpcap, ent->client->ps.fd.forcePower);
+        s->fastRegen = s->fpcap = 0;
+    }
+    if (s->forceshield && s->forceshield <= level.time) {
+        ent->flags &= ~FL_SHIELDED;
+        s->forceshield = 0;
+    }
+    if (s->battlemedfx > level.time) SSkills_Heal(ent, 4, 2);
+    if (SSkills_Has(ent, SKILL_IMPLANTREGEN) && ent->client->ps.weapon == WP_MELEE &&
+        ent->client->ps.torsoAnim == BOTH_MEDITATE && ent->client->ps.legsAnim == BOTH_MEDITATE) {
+        SSkills_Heal(ent, 2, 1);
+        Add_Ammo(ent, AMMO_BLASTER, 5);
+        Add_Ammo(ent, AMMO_POWERCELL, 5);
+        Add_Ammo(ent, AMMO_METAL_BOLTS, 5);
+    }
+    if (s->cloaked) {
+        if (s->cloaked <= level.time || ent->client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK)) {
+            Kebab_CloakStop(ent);
+        } else if (s->cloakCheckTime <= level.time) {
+            if (ent->client->ps.fd.forcePower < 6) Kebab_CloakStop(ent);
+            else ent->client->ps.fd.forcePower -= 6;
+            s->cloakCheckTime = level.time + 1000;
+        }
+    }
+    if (s->poisoned > level.time && s->poisonCheckTime <= level.time && !immune) {
+        gentity_t *source = SSkills_Entity(s->poisonedBy);
+        if (source && source->client && source->health > 0)
+            G_Damage(ent, source, source, NULL, NULL, Q_irand(9, 10), DAMAGE_NO_ARMOR, MOD_SLIME);
+        s->poisonCheckTime = level.time + 1000;
+    }
+    if (rolling) {
+        s->burn = s->fuelpour = s->incineratetime = 0;
+        s->incinerate = -1;
+    }
+    if (s->fuelpour > level.time && s->burn > level.time && !immune && !SSkills_Has(ent, SKILL_FIRESWORD)) {
+        gentity_t *source = SSkills_Entity(s->fueledby);
+        if (source && source->client) G_Damage(ent, source, source, NULL, NULL, 4, 0, MOD_LAVA);
+    }
+    if (s->incinerate >= 0 && s->incineratetime > 0 && !immune) {
+        gentity_t *source = SSkills_Entity(s->incinerate);
+        if (source && source->client && !SSkills_Has(ent, SKILL_FIRESWORD)) {
+            int damage = s->incineratetime <= level.time ? 99999 : 5;
+            G_Damage(ent, source, source, NULL, NULL, damage, DAMAGE_NO_ARMOR, MOD_LAVA);
+        }
+        if (s->incineratetime <= level.time) {
+            s->incineratetime = 0;
+            s->incinerate = -1;
+        }
+    }
+    if (s->wallcharge && s->wallcharge <= level.time) {
+        s->wallcharge = 0;
+        ent->client->Lmd.flags &= ~SNF_FREEZE;
+        if (ent->health > 0) Kebab_FireWallDo(ent);
+    }
+    if (s->sparktime > level.time) Kebab_ForceCombustionDo(ent);
+    if (s->screamtimer > level.time) Kebab_ForceScreamDo(ent, 256);
+    if (s->insanity > level.time && !immune && !Kebab_CanEvade(ent)) Kebab_ForceInsanityDo(ent);
+    if (s->repulse) {
+        if (s->repulse > level.time) Kebab_Repulse(ent, qtrue, 64, 256);
+        else {
+            s->repulse = 0;
+            Kebab_Repulse(ent, qfalse, 512, 128);
+        }
+    }
+    if (s->battlemed) {
+        if (ent->client->ps.torsoAnim != BOTH_MEDITATE || ent->client->ps.legsAnim != BOTH_MEDITATE)
+            s->battlemed = s->battlemedtimer = 0;
+        else if ((s->battlemedtimer += 200) >= 3000) {
+            s->battlemed = s->battlemedtimer = 0;
+            Kebab_BattleMedDo(ent, 512);
+        }
+    }
+    if (Kebab_HasSkill(ent->client->pers.Lmd.account, SKILL_AM, qtrue) &&
+        (ent->client->ps.fd.forcePowersActive & (1 << FP_SEE))) {
+        if ((s->seeing += 200) >= 20000) WP_ForcePowerStop(ent, FP_SEE);
+    }
+    if (SSkills_Has(ent, SKILL_FORCESTOMP)) {
+        if (ent->client->ps.groundEntityNum == ENTITYNUM_NONE && ent->client->ps.velocity[2] < 0 &&
+            (ent->client->ps.pm_flags & PMF_DUCKED)) s->stompstr++;
+        else {
+            if (s->stompstr > 4 && (ent->client->ps.pm_flags & PMF_DUCKED)) Kebab_StompWave(ent);
+            s->stompstr = 0;
+        }
+    }
+}
+
+int SSkills_Regen(gentity_t *ent, int amount)
+{
+    if (!PLAYERISVALID(ent) || !lmd_specialSkills.integer) return max(1, amount);
+    sskillState_t *s = &p_playerInfo[ent->s.number];
+    if (s->severed > level.time || s->sparktime > level.time) return 0;
+    if (s->regenSlowed > level.time && Q_irand(0, 4)) return 0;
+    amount = max(1, amount);
+    return s->fastRegen > level.time ? amount * 4 : amount;
+}
+
+qboolean SSkills_ForceAllowed(gentity_t *attacker, gentity_t *target, int power)
+{
+    if (!lmd_specialSkills.integer) return qtrue;
+    if (PLAYERISVALID(attacker) && p_playerInfo[attacker->s.number].severed > level.time) return qfalse;
+    if (!PLAYERISVALID(target) || power == FP_TEAM_HEAL || power == FP_TEAM_FORCE) return qtrue;
+    if (p_playerInfo[target->s.number].forceshield > level.time) return qfalse;
+    if (SSkills_Has(target, SKILL_FORCERESIST) &&
+        (power == FP_LIGHTNING || power == FP_TELEPATHY ||
+         ((power == FP_PUSH || power == FP_PULL) && !Q_irand(0, 2)))) return qfalse;
+    return qtrue;
+}
+
+int SSkills_Damage(gentity_t *target, gentity_t *attacker, int damage, int flags, int mod)
+{
+    if (!lmd_specialSkills.integer || damage <= 0) return damage;
+    if (PLAYERISVALID(target)) {
+        sskillState_t *s = &p_playerInfo[target->s.number];
+        if (s->cloaked && (s->cloakdmg += damage) >= 25) Kebab_CloakStop(target);
+        if (!(flags & DAMAGE_NO_PROTECTION)) {
+            if (mod == MOD_LAVA && SSkills_Has(target, SKILL_FIRESWORD)) return 0;
+            if (SSkills_Has(target, SKILL_HR)) damage = max(1, (int)(damage * 0.8f));
+            if ((flags & DAMAGE_RADIUS) && SSkills_Has(target, SKILL_BLASTARMOR)) damage = max(1, damage / 2);
+            if ((mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER) && SSkills_Has(target, SKILL_DODGE) && Q_irand(0, 3))
+                return 0;
+        }
+        if (s->drugged > level.time) damage = min(INT_MAX / 2, damage) * 2;
+        if (s->fuelpour > level.time && mod == MOD_LAVA) s->burn = level.time + 10000;
+        if (mod == MOD_DEMP2_ALT && PLAYERISVALID(attacker) &&
+            Kebab_HasSkill(attacker->client->pers.Lmd.account, SKILL_ENERGY, qtrue) && !Kebab_HasImmunity(target))
+            G_Knockdown(target, 1000);
+    }
+    if (PLAYERISVALID(attacker) && attacker != target) {
+        sskillState_t *s = &p_playerInfo[attacker->s.number];
+        if (s->cloaked) Kebab_CloakStop(attacker);
+        if (s->forceshield > level.time) damage = max(1, damage / 2);
+        if (PLAYERISVALID(target) && !Kebab_HasImmunity(target)) {
+            if (SSkills_Has(attacker, SKILL_CF) && mod == MOD_MELEE) {
+                damage = min(INT_MAX / 2, damage) * 2;
+                if (target->client->ps.weapon == WP_SABER) {
+                    target->client->ps.saberHolstered = 2;
+                    target->client->ps.weaponTime = max(2000, target->client->ps.weaponTime);
+                }
+            }
+            if (SSkills_Has(attacker, SKILL_CS) && mod >= MOD_BRYAR_PISTOL && mod <= MOD_CONC_ALT) {
+                damage += Q_irand(5, 10);
+                if (!Q_irand(0, 9)) G_Knockdown(target, 500);
+            }
+            if (SSkills_Has(attacker, SKILL_FIRESWORD) && mod == MOD_SABER && !attacker->client->ps.saberInFlight &&
+                s->cds[SKILL_FIRESWORD] <= level.time) {
+                damage += Q_irand(10, 15);
+                s->cds[SKILL_FIRESWORD] = level.time + 300;
+            }
+        }
+        if (PLAYERISVALID(target) && (mod == MOD_SABER || mod == MOD_MELEE) &&
+            SSkills_Has(target, SKILL_LIGHTNINGSHIELD) && !Kebab_HasImmunity(attacker))
+            G_Damage(attacker, target, target, NULL, NULL, max(1, damage * 3 / 4), DAMAGE_NO_ARMOR, MOD_DEMP2);
+    }
+    return damage;
+}
+
+static qboolean SSkills_ShopAccess(gentity_t *shop, gentity_t *player)
+{
+    extern qboolean PlayerUseableCheck(gentity_t *, gentity_t *);
+    return PLAYERISVALID(player) && lmd_specialSkills.integer && !(shop->flags & FL_INACTIVE) &&
+        PlayerUseableCheck(shop, player) && DistanceSquared(shop->r.currentOrigin, player->client->ps.origin) <= shop->radius * shop->radius;
+}
+
+static void SSkills_ShopUse(gentity_t *self, gentity_t *other, gentity_t *player)
+{
+    if (!SSkills_ShopAccess(self, player)) return;
+    if (!player->client->pers.Lmd.account || PlayerAcc_Prof_GetLevel(player) < 40) {
+        Disp(player, "^3Log in with a level 40 Jedi or Mercenary to use this skill shop.");
+        return;
+    }
+    Interact_Set(player, self, self->r.currentOrigin, self->radius, NULL);
+    Disp(player, "^5Special Skill Shop: /interact <skill name> buy. Prices are shown below. /sskills <name> activates an owned skill.");
+    int prof = PlayerAcc_Prof_GetProfession(player);
+    for (int i = 0; i < NUM_SKILLS; i++) {
+        if (starSkills[i].prof != prof) continue;
+        Disp(player, va("^3%s ^7- %s: ^2%d CR%s", starSkills[i].cmdName, starSkills[i].name,
+            SSkills_Price(i), Kebab_HasSkill(player->client->pers.Lmd.account, i, qfalse) ? " ^5(owned)" : ""));
+    }
+    trap_SendServerCommand(player->s.number, "cp \"^5Special Skill Shop\n^7Skill list and prices are in your console.\n/interact <skill name> buy\n/sskills <name> to activate\"");
+}
+
+static void SSkills_ShopInteract(gentity_t *self, gentity_t *player)
+{
+    if (!SSkills_ShopAccess(self, player)) return;
+    char name[MAX_STRING_CHARS], action[32];
+    trap_Argv(1, name, sizeof(name));
+    trap_Argv(2, action, sizeof(action));
+    if (!name[0]) { SSkills_ShopUse(self, player, player); return; }
+    int index = SSkills_Find(name);
+    if (index < 0) { Disp(player, "^3Unknown special skill."); return; }
+    if (Q_stricmp(action, "buy")) {
+        Disp(player, va("^5%s ^7(%d CR): %s\n^3Use /interact %s buy to purchase.",
+            starSkills[index].name, SSkills_Price(index), starSkills[index].desc, starSkills[index].cmdName));
+        return;
+    }
+    int price = SSkills_Price(index);
+    if (price <= 0) { Disp(player, "^1The server's skill price configuration is invalid."); return; }
+    SSkills_Buy(player, index, price);
+}
+
+const entityInfoData_t lmd_skillshop_keys[] = {
+    {"#UKEYS", NULL}, {"#MODEL", NULL}, {"#HITBOX", NULL},
+    {"radius", "Maximum distance for purchases, default 128 units."},
+    {"model", "Defaults to models/map_objects/factory/f_con1.md3."},
+    {NULL, NULL}
+};
+entityInfo_t lmd_skillshop_info = {
+    "Level 40 special skill vendor. Use to list skills, /interact <name> buy to purchase.",
+    NULL, lmd_skillshop_keys
+};
+void lmd_skillshop(gentity_t *ent)
+{
+    extern void PlayerUsableGetKeys(gentity_t *);
+    extern void SpawnEntModel(gentity_t *, qboolean, qboolean);
+    PlayerUsableGetKeys(ent);
+    G_SpawnInt("radius", "128", &ent->radius);
+    ent->radius = max(32, min(512, ent->radius));
+    if (!ent->model || !ent->model[0]) ent->model = "models/map_objects/factory/f_con1.md3";
+    SpawnEntModel(ent, qtrue, qfalse);
+    ent->use = SSkills_ShopUse;
+    ent->interact = SSkills_ShopInteract;
+    ent->r.svFlags |= SVF_PLAYER_USABLE;
+    ent->Lmd.crosshairText = "Special Skill Shop";
+    ent->Lmd.crosshairTextRange = 256;
+    trap_LinkEntity(ent);
 }

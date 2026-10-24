@@ -4,6 +4,7 @@
 
 //#include "g_local.h"
 #include "b_local.h"
+#include "Lmd_SpecialSkills.h"
 #include "bg_saga.h"
 
 #include "Lmd_Accounts_Stats.h"
@@ -4738,6 +4739,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	if (targ && targ->NPC && targ->NPC->scriptFlags & SCF_NO_HURT)
 		return;
+
+	damage = SSkills_Damage(targ, attacker, damage, dflags, mod);
+	if (damage <= 0) return;
 
 	//RoboPhred:
 	if(targ->s.number < MAX_CLIENTS && targ->client && attacker && attacker->client && attacker != targ && (targ->flags & FL_GODMODE || targ->flags & FL_UNDYING) && !(targ->client->ps.eFlags & EF_NODRAW)) {

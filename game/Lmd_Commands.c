@@ -13,6 +13,7 @@
 #include "Lmd_Arrays.h"
 #include "Lmd_Console.h"
 #include "Lmd_HiRuns.h"
+#include "Lmd_SpecialSkills.h"
 #include "Lmd_Time.h"
 
 gentity_t *G_GetJediMaster (void);
@@ -1145,6 +1146,7 @@ void Cmd_Confirm_f(gentity_t *ent, int iArg);
 void Cmd_Interact_f(gentity_t *ent, int iArg);
 
 cmdEntry_t playerCommandEntries[] = {
+	{"sskills", "List special skills or activate an owned skill: /sskills <name>.", SSkills_Command, 0, qfalse, 0, 0, 0, 0},
 	//{"testline", "\n", Cmd_TestLine_f, 0, 1, 0, 0, 0},
 	{"actions", "List and use your current pending actions.", Cmd_Action_f, 0, qfalse, 0, 0, 0, 0},
 	{"admins", "List currently logged in admins and their level.", Cmd_AdminInfo_f, 0, qfalse, 0, 0, 0, 0},

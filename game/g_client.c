@@ -1,6 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
+#include "Lmd_SpecialSkills.h"
 #include "../ghoul2/G2.h"
 #include "bg_saga.h"
 
@@ -4394,6 +4395,7 @@ void ClientSpawn(gentity_t *ent) {
 	qboolean			inSiegeWithClass = qfalse;
 	index = ent - g_entities;
 	client = ent->client;
+	SSkills_Reset(ent, qfalse);
 
 	//RoboPhred: why index var?  I kinda remember there being an issue where ent->s.number was invalid...  Well, fix it!
 
@@ -4669,6 +4671,7 @@ void ClientSpawn(gentity_t *ent) {
 		ent->client->ps.saberHolstered = 2;
 
 	// run the presend to set anything else
+	if (g_gametype.integer == GT_FFA) SSkills_Spawn(ent);
 	ClientEndFrame( ent );
 
 	// clear entity state values
@@ -4727,6 +4730,7 @@ void ClientDisconnect( int clientNum ) {
 	Confirm_Clear(ent);
 	Interact_Clear(ent);
 	HiRuns_ClientDisconnect(ent);
+	SSkills_Reset(ent, qtrue);
 
 	//Lugormod remove buddies and ignores
 	j = (int)floor((float)clientNum / 16);
