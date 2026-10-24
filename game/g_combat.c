@@ -4740,9 +4740,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	if (targ && targ->NPC && targ->NPC->scriptFlags & SCF_NO_HURT)
 		return;
 
-	damage = SSkills_Damage(targ, attacker, damage, dflags, mod);
-	if (damage <= 0) return;
-
 	//RoboPhred:
 	if(targ->s.number < MAX_CLIENTS && targ->client && attacker && attacker->client && attacker != targ && (targ->flags & FL_GODMODE || targ->flags & FL_UNDYING) && !(targ->client->ps.eFlags & EF_NODRAW)) {
 		if(attacker->client->Lmd.invulnAlertDebounce < level.time) {
@@ -5397,6 +5394,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		targ->client->ps.weaponTime += 500;
 	}
 
+	damage = SSkills_Damage(targ, attacker, damage, dflags, mod);
+	if (damage <= 0) return;
 	take = damage;
 	save = 0;
 
@@ -6107,6 +6106,7 @@ G_RadiusDamage
 ============
 */
 qboolean G_RadiusDamage ( vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, gentity_t *missile, int mod) {
+	SSkills_Demolition(attacker, &damage, &radius, mod);
 	float		points, dist;
 	gentity_t	*ent;
 	int			entityList[MAX_GENTITIES];

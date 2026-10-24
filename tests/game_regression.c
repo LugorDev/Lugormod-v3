@@ -5,6 +5,7 @@
 #include "../game/Lmd_Accounts_CustomSkills.h"
 #include "../game/Lmd_Accounts_Stats.h"
 #include "../game/Lmd_Checksum.h"
+#include "../game/Lmd_SpecialSkills.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -42,11 +43,16 @@ qboolean parseAccount(char *name, char *buffer);
 void Use_Target_Fp(gentity_t *ent, gentity_t *other, gentity_t *activator);
 extern vmCvar_t lmd_accBaseDays;
 extern vmCvar_t lmd_accMaxDays;
+extern vmCvar_t lmd_specialSkills;
+extern vmCvar_t lmd_skillCreditCost;
+extern vmCvar_t lmd_startingLevel;
+int Professions_StartingLevel(void);
 
 static char saved[65536];
 static size_t savedLength;
 static int failOpen;
 static int checks;
+static const char *commandArgs[4];
 #define CHECK(condition) do { checks++; if (!(condition)) { \
   fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #condition); exit(1); } } while (0)
 
@@ -54,6 +60,15 @@ static int QDECL mockEngine(int call, ...) {
     va_list args;
     va_start(args, call);
     switch (call) {
+    case G_ARGV: {
+        int index = va_arg(args, int);
+        char *out = va_arg(args, char *);
+        int size = va_arg(args, int);
+        Q_strncpyz(out, index < 4 && commandArgs[index] ? commandArgs[index] : "", size);
+        break;
+    }
+    case G_SEND_SERVER_COMMAND:
+        break;
     case G_REAL_TIME: {
         qtime_t *now = va_arg(args, qtime_t *);
         memset(now, 0, sizeof(*now));
@@ -169,6 +184,58 @@ int main(void) {
     Use_Target_Fp(&target, NULL, &player);
     CHECK(client.ps.fd.forcePowerLevel[FP_PUSH] == 3);
     CHECK(client.ps.fd.forcePowerLevel[FP_PULL] == 2);
+
+    lmd_startingLevel.integer = 40;
+    CHECK(Professions_StartingLevel() == 40);
+    lmd_startingLevel.integer = 200;
+    CHECK(Professions_StartingLevel() == 40);
+    lmd_startingLevel.integer = -10;
+    CHECK(Professions_StartingLevel() == 1);
+    lmd_startingLevel.integer = 40;
+    lmd_specialSkills.integer = 1;
+    lmd_skillCreditCost.integer = 100;
+    SSkills_Init();
+    SSkills_Reset(&player, qtrue);
+    player.inuse = qtrue;
+    player.health = client.ps.stats[STAT_HEALTH] = client.ps.stats[STAT_MAX_HEALTH] = 100;
+    client.pers.Lmd.account = copy;
+    client.pers.Lmd.character = first;
+    client.ps.fd.forcePower = client.ps.fd.forcePowerMax = 100;
+    client.sess.sessionTeam = TEAM_FREE;
+    Accounts_Prof_SetProfession(copy, 3); // Jedi
+    Accounts_Prof_SetLevel(copy, 39);
+    Accounts_SetCredits(copy, 2000);
+    CHECK(!SSkills_Buy(&player, SKILL_SHIELD));
+    CHECK(Accounts_GetCredits(copy) == 2000);
+    Accounts_Prof_SetLevel(copy, 40);
+    CHECK(!SSkills_Buy(&player, SKILL_BACTAS)); // Wrong profession.
+    CHECK(SSkills_Buy(&player, SKILL_SHIELD));
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    CHECK(!SSkills_Buy(&player, SKILL_SHIELD));
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    CHECK(strstr(saved, "sskill_forceshield: 1") != NULL);
+    commandArgs[1] = "forceshield";
+    SSkills_Command(&player, 0);
+    CHECK(client.ps.fd.forcePower == 20);
+    CHECK((player.flags & FL_SHIELDED) != 0);
+    CHECK(!SSkills_ForceAllowed(NULL, &player, FP_PUSH));
+    SSkills_Reset(&player, qfalse);
+    CHECK(!(player.flags & FL_SHIELDED));
+    client.ps.fd.forcePower = 100;
+    SSkills_Command(&player, 0);
+    CHECK(client.ps.fd.forcePower == 100); // Respawn must not bypass cooldown.
+    failOpen = 1;
+    CHECK(!SSkills_Buy(&player, SKILL_DASH));
+    CHECK(Accounts_GetCredits(copy) == 1700);
+    CHECK(!SSkills_Has(&player, SKILL_DASH));
+    failOpen = 0;
+    Account_SetActiveCharacter(copy, second);
+    CHECK(!SSkills_Has(&player, SKILL_SHIELD));
+    Account_SetActiveCharacter(copy, first);
+    CHECK(SSkills_Has(&player, SKILL_SHIELD));
+    lmd_specialSkills.integer = 0;
+    CHECK(!SSkills_Has(&player, SKILL_SHIELD));
+    lmd_specialSkills.integer = 1;
     CHECK(!strcmp(powers, "push3.pull2"));
     client.ps.fd.forcePowerLevel[FP_PULL] = 0;
     Use_Target_Fp(&target, NULL, &player);

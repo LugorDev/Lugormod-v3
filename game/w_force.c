@@ -1069,6 +1069,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 
 qboolean WP_ForcePowerAvailable( gentity_t *self, forcePowers_t forcePower, int overrideAmt )
 {
+	if (!SSkills_ForceAllowed(self, NULL, forcePower)) return qfalse;
 	// RoboPhred: Check for invalid force powers.
 	if (forcePower < 0 || forcePower >= NUM_FORCE_POWERS) {
 		//WP_LogWeirdStuff(va("Client %s tried to get available power for invalid power %i\n", self->client->pers.netname, forcePower));

@@ -441,6 +441,23 @@ targetname  - make the trigger target this value for the entity to be used
 ```
 /place lmd_toggle * target,red_light,target2,blue_light,target3,green_light,count,3,targetname,light_sequence,
 ```
+## lmd_skillshop
+Premade level 40 special skill terminal with a default model and collision box.
+Place it with `/place lmd_skillshop`, press Use to see the catalogue, then enter
+`/interact <skill name> buy`. Use `/sskills <skill name>` to activate an owned
+ability. Purchases belong to the current character and survive profession changes.
+
+The shop supports the usual player requirement, model and hitbox keys. `radius`
+sets the purchase distance (default 128, clamped to 32–512 units). Purchases are
+checked again at the terminal, including distance, level, profession, credits and
+existing ownership. See [special skills](../special-skills.md) for the catalogue
+and server settings.
+
+```
+/place lmd_skillshop
+/place lmd_skillshop 0 radius,160,angle,90,
+```
+
 ## lmd_trainer *(L)
 Interactive training menu that lets players view account information, learn professions, and upgrade skills via an on-screen interface.
 

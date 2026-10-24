@@ -11,6 +11,7 @@ int Professions_StartingLevel(void);
 #include "Lmd_IPs.h"
 #include "Lmd_Commands_Core.h"
 #include "Lmd_Console.h"
+#include "Lmd_SpecialSkills.h"
 
 Account_t *Accounts_New(char *username, char *name, char *password);
 void Accounts_Save(Account_t *acc);
@@ -582,6 +583,7 @@ void Lmd_Accounts_Player_DeselectCharacter(gentity_t *ent) {
 		return;
 	Account_t *acc = ent->client->pers.Lmd.account;
 	Inventory_Player_Logout(ent);
+	SSkills_Reset(ent, qfalse);
 	// Keep the last character available to offline administrative getters.
 	ent->client->pers.Lmd.character = NULL;
 }

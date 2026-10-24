@@ -19,6 +19,7 @@ Unlikely:
 
 
 #include "g_local.h"
+#include "Lmd_SpecialSkills.h"
 #include "Lmd_Data.h"
 #include "Lmd_Accounts_Data.h"
 #include "Lmd_Prof_Core.h"
@@ -824,6 +825,7 @@ int Merc_UsedWeaponPoints(gentity_t *ent){
 }
 
 float Merc_SpeedFactor(gentity_t *ent) {
+	if (SSkills_Has(ent, SKILL_TRAINING)) return 1.15f;
 	//Ufo: slow down only in certain conditions
 	return (ent->client->ps.weapon > WP_BOWCASTER || ent->client->jetPackOn) ? 0.8 : 1.0;
 }
