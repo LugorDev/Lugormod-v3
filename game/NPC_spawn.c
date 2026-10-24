@@ -1692,6 +1692,8 @@ gentity_t *NPC_Spawn_Do( gentity_t *ent )
 	//RoboPhred: NPC_target6
 	newent->target6 = G_NewString(ent->target6);//use when the npc kills a player.
 
+	newent->Lmd.weaponToss = ent->Lmd.weaponToss;
+
 	newent->wait = ent->wait;
 
 	for( index = BSET_FIRST; index < NUM_BSETS; index++)
@@ -2138,6 +2140,8 @@ void NPC_Spawn_Tjo(gentity_t *ent){
 	newent->target6 = G_NewString(ent->target6);//use when the npc kills a player.
 	newent->wait = ent->wait;
 
+	newent->Lmd.weaponToss = ent->Lmd.weaponToss;
+
 	for( index = BSET_FIRST; index < NUM_BSETS; index++)
 	{
 		if ( ent->behaviorSet[index] )
@@ -2552,6 +2556,7 @@ void SP_NPC_spawner( gentity_t *self){
 	self->delay *= 1000;//1 = 1 msec, 1000 = 1 sec
 
 	G_SpawnInt( "showhealth", "0", &t );
+	G_SpawnInt("weaponToss", "0", &self->Lmd.weaponToss);
 	if (t)
 		self->s.shouldtarget = qtrue;
 
@@ -4713,6 +4718,7 @@ void SP_LMD_spawner (gentity_t *NPCspawner){
 	}
 	int scale;
 	G_SpawnInt("customscale", "0", &scale);
+	G_SpawnInt("weaponToss", "0", &NPCspawner->Lmd.weaponToss);
 	NPCspawner->s.iModelScale = scale;
 
 	trap_LinkEntity(NPCspawner);

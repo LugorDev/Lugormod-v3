@@ -548,6 +548,9 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	return;
 	*/
 
+	if (self && self->NPC && !self->Lmd.weaponToss)
+		return;
+
 	if ((weapon == WP_STUN_BATON 
 		&& gameMode(GMF_WITH_HOOK))
 		|| (weapon == WP_BRYAR_OLD 
