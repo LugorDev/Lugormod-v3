@@ -360,7 +360,7 @@ void G_SetEnemy( gentity_t *self, gentity_t *enemy )
 		return;
 	}
 
-	if (self && self->NPC && self->NPC->scriptFlags & SCF_NO_HURT)
+	if (!self || (self->NPC && (self->NPC->scriptFlags & SCF_NO_HURT)))
 		return;
 
 	//Don't take the enemy if in notarget

@@ -5579,7 +5579,7 @@ evasionType_t Jedi_SaberBlockGo( gentity_t *self, usercmd_t *cmd, vec3_t pHitloc
 void NPC_SetLookTarget( gentity_t *self, int entNum, int clearTime );
 void WP_SaberStartMissileBlockCheck( gentity_t *self, usercmd_t *ucmd  )
 {
-	if (self && self->NPC && self->NPC->scriptFlags & SCF_NO_HURT)
+	if (!self || !self->client || (self->NPC && (self->NPC->scriptFlags & SCF_NO_HURT)))
 		return;
 		
 	float		dist;

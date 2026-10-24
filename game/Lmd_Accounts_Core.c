@@ -411,6 +411,7 @@ Account_t *Accounts_GetByName(char *str) {
 	int i, c;
 	for(i = 0; i < AccList.count; i++) {
 		Account_t *acc = AccList.accounts[i];
+		if (!acc) continue;
 		for (c = 0; c < acc->numCharacters; c++) {
 			if (acc->characters[c] && acc->characters[c]->name &&
 				Q_stricmpname(acc->characters[c]->name, str) == 0)
@@ -502,7 +503,7 @@ Character_t *Account_NewCharacter(Account_t *acc, char *name) {
 }
 
 qboolean Account_DeleteCharacter(Account_t *acc, Character_t *ch) {
-	if (!acc || !ch)
+	if (!acc || !ch || acc->numCharacters <= 0 || acc->numCharacters > MAX_CHARS_PER_ACCOUNT)
 		return qfalse;
 	int i, found = -1;
 	for (i = 0; i < acc->numCharacters; i++) {
@@ -526,7 +527,8 @@ qboolean Account_DeleteCharacter(Account_t *acc, Character_t *ch) {
 }
 
 qboolean Account_MoveCharacter(Account_t *src, Character_t *ch, Account_t *dst) {
-	if (!src || !dst || !ch || src == dst)
+	if (!src || !dst || !ch || src == dst || src->numCharacters <= 0 ||
+		src->numCharacters > MAX_CHARS_PER_ACCOUNT || dst->numCharacters < 0)
 		return qfalse;
 	if (dst->numCharacters >= MAX_CHARS_PER_ACCOUNT)
 		return qfalse;
