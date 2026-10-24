@@ -319,6 +319,16 @@ target2   - fire if they do not meet requirements
 /place lmd_playercheck * targetname,let_me_in,level,5,target,teleport_me_in,target2,deny_msg,
 ```
 
+## lmd_entitycheck ** (L)
+Checks the same player requirements as `lmd_playercheck`. With `checkTarget`, also
+checks every named `func_door`, `lmd_door`, or `fx_runner`. `isOn,1` requires open/on;
+`isOn,0` requires closed/off. Moving doors and missing targets fail. Fires `target`
+on success and `target2` on failure. Existing `lmd_playercheck` entities still work.
+
+```
+/place lmd_entitycheck * targetname,check_vault,checkTarget,vault_door,isOn,0,target,locked,target2,unlocked,
+```
+
 ## lmd_playereffect ** (L)
 Applies the selected effect to the player who triggers it.
 

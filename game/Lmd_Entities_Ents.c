@@ -3388,7 +3388,7 @@ static void lmd_entitycheck_use(gentity_t *self, gentity_t *other, gentity_t *ac
                 }
                 on = checked->moverState == MOVER_POS2;
             } else if (!Q_stricmp(checked->classname, "fx_runner")) {
-                on = !(checked->spawnflags & 2);
+                on = !(checked->spawnflags & 2) && checked->nextthink > 0;
             } else {
                 matches = qfalse;
                 break;

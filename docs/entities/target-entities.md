@@ -131,7 +131,7 @@ ForceRegenSpeedMultiplier   - Multiplier applied to the player's Force regenerat
 ### Example code:
 
 ```
-/place target_fp * targetname,force_buff,ModifyPowers,push3.lightning2.ForceRegenSpeedMultiplier,1.5,
+/place target_fp * targetname,force_buff,ModifyPowers,push3.lightning2,ForceRegenSpeedMultiplier,1.5,
 ```
 
 - When triggered this target gives players Force Push level 3, Force Lightning level 2 and increases their Force regeneration speed by 50%.
