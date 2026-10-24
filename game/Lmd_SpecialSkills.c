@@ -1678,12 +1678,17 @@ static void SSkills_ShopDraw(gentity_t *player)
 {
     sskillState_t *s = &p_playerInfo[player->s.number];
     Account_t *account = player->client->pers.Lmd.account;
-    int skills[NUM_SKILLS];
+    int skills[NUM_SKILLS] = {0};
     int count = SSkills_ShopCatalogue(s->shopProfession, skills);
+    if (s->shopSelection < 0 || s->shopSelection > count) {
+        s->shopSelection = 0;
+        s->shopConfirm = qfalse;
+    }
     char message[MAX_STRING_CHARS];
     Q_strncpyz(message, va("^5Special Skill Shop\n^7Credits: ^2%d\n\n", Accounts_GetCredits(account)), sizeof(message));
-    if (s->shopConfirm && s->shopSelection < count) {
+    if (s->shopConfirm && s->shopSelection >= 0 && s->shopSelection < count && s->shopSelection < NUM_SKILLS) {
         int index = skills[s->shopSelection];
+        if (index < 0 || index >= NUM_SKILLS) { SSkills_ShopClose(player); return; }
         qboolean owned = Kebab_HasSkill(account, index, qfalse);
         Q_strcat(message, sizeof(message), va("^3%s ^7(%s)\n", starSkills[index].name,
             starSkills[index].isPassive ? "Passive" : "Active"));
@@ -1697,8 +1702,9 @@ static void SSkills_ShopDraw(gentity_t *player)
         int page = min(s->shopSelection / SSKILLS_SHOP_PAGE_SIZE, max(0, (count - 1) / SSKILLS_SHOP_PAGE_SIZE));
         Q_strcat(message, sizeof(message), va("^7Page %d/%d\n", page + 1, max(1, (count + SSKILLS_SHOP_PAGE_SIZE - 1) / SSKILLS_SHOP_PAGE_SIZE)));
         int end = min(count, (page + 1) * SSKILLS_SHOP_PAGE_SIZE);
-        for (int row = page * SSKILLS_SHOP_PAGE_SIZE; row < end; row++) {
+        for (int row = page * SSKILLS_SHOP_PAGE_SIZE; row >= 0 && row < end && row < NUM_SKILLS; row++) {
             int index = skills[row];
+            if (index < 0 || index >= NUM_SKILLS) { SSkills_ShopClose(player); return; }
             Q_strcat(message, sizeof(message), va("%s%s%s - %d CR%s\n",
                 row == s->shopSelection ? "^3[ " : "^7  ", starSkills[index].name,
                 row == s->shopSelection ? " ]" : "", SSkills_Price(index),
@@ -1756,8 +1762,9 @@ static void SSkills_ShopSelect(gentity_t *player)
     sskillState_t *s = &p_playerInfo[player->s.number];
     int skills[NUM_SKILLS];
     int count = SSkills_ShopCatalogue(s->shopProfession, skills);
-    if (s->shopSelection >= count) { SSkills_ShopClose(player); return; }
+    if (s->shopSelection < 0 || s->shopSelection >= count || s->shopSelection >= NUM_SKILLS) { SSkills_ShopClose(player); return; }
     int index = skills[s->shopSelection];
+    if (index < 0 || index >= NUM_SKILLS) { SSkills_ShopClose(player); return; }
     if (!s->shopConfirm) {
         s->shopConfirm = qtrue;
         s->shopConfirmChoice = 0;
